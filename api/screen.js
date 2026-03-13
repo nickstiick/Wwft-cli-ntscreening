@@ -1,5 +1,7 @@
 // API endpoint that orchestrates the full screening:
-// Serper (Google + News), Sanctions.io, Rechtspraak, KvK, and Claude analysis
+// Serper (Google + News) via Mullvad VPN, Sanctions.io, Rechtspraak, KvK, and Claude analysis
+
+const { serperGoogle, serperNews } = require('./search');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -25,9 +27,7 @@ module.exports = async function handler(req, res) {
   const timestamp = () => new Date().toISOString();
 
   try {
-    // ─── SERPER: GOOGLE SEARCHES ────────────────────────
-    const serperKey = process.env.SERPER_API_KEY;
-
+    // ─── SERPER: GOOGLE SEARCHES (via Mullvad VPN) ──────
     const googleQueries = [
       `"${naam}" ${locatie || ''}`.trim(),
       `"${naam}" fraude OR oplichting OR witwassen OR veroordeeld`,
@@ -42,62 +42,28 @@ module.exports = async function handler(req, res) {
     const googlePromises = googleQueries.map(async (q) => {
       resultaten.queries.push({ type: 'google', query: q, tijdstip: timestamp() });
       try {
-        const resp = await fetch('https://google.serper.dev/search', {
-          method: 'POST',
-          headers: { 'X-API-KEY': serperKey, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ q, gl: 'nl', hl: 'nl', num: 5 })
-        });
-        const data = await resp.json();
-        return (data.organic || []).map(r => ({
-          titel: r.title,
-          link: r.link,
-          snippet: r.snippet,
-          bron: 'Google'
-        }));
+        return await serperGoogle(q);
       } catch { return []; }
     });
 
-    // ─── SERPER: BING NEWS ──────────────────────────────
+    // ─── SERPER: NEWS (via Mullvad VPN) ─────────────────
     const newsQuery = `"${naam}"`;
     resultaten.queries.push({ type: 'nieuws', query: newsQuery, tijdstip: timestamp() });
 
     const newsPromise = (async () => {
       try {
-        const resp = await fetch('https://google.serper.dev/news', {
-          method: 'POST',
-          headers: { 'X-API-KEY': serperKey, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ q: newsQuery, gl: 'nl', hl: 'nl', num: 10, tbs: 'qdr:y5' })
-        });
-        const data = await resp.json();
-        return (data.news || []).map(r => ({
-          titel: r.title,
-          link: r.link,
-          snippet: r.snippet,
-          datum: r.date,
-          bron: r.source || 'Nieuws'
-        }));
+        return await serperNews(newsQuery);
       } catch { return []; }
     })();
 
-    // ─── YANDEX (uitgebreid tier) ───────────────────────
+    // ─── YANDEX (uitgebreid tier, via Mullvad VPN) ──────
     let yandexPromise = Promise.resolve([]);
     if (isUitgebreid) {
       const yandexQuery = `"${naam}"`;
       resultaten.queries.push({ type: 'yandex', query: yandexQuery, tijdstip: timestamp() });
       yandexPromise = (async () => {
         try {
-          const resp = await fetch('https://google.serper.dev/search', {
-            method: 'POST',
-            headers: { 'X-API-KEY': serperKey, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ q: yandexQuery, gl: 'ru', hl: 'ru', num: 5 })
-          });
-          const data = await resp.json();
-          return (data.organic || []).map(r => ({
-            titel: r.title,
-            link: r.link,
-            snippet: r.snippet,
-            bron: 'Yandex/Google RU'
-          }));
+          return await serperGoogle(yandexQuery, { gl: 'ru', hl: 'ru', bron: 'Yandex/Google RU' });
         } catch { return []; }
       })();
     }

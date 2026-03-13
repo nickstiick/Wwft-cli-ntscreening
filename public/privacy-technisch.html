@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy &amp; techniek — Dossier</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy: #1a1a2e;
+      --gold: #c9a84c;
+      --cream: #f8f7f4;
+      --text: #333;
+      --text-light: #666;
+      --border: #e0ddd5;
+      --radius: 8px;
+    }
+    body {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      color: var(--text);
+      background: var(--cream);
+      line-height: 1.8;
+    }
+    nav {
+      background: var(--navy);
+      padding: 16px 0;
+    }
+    .nav-inner {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .logo {
+      font-size: 20px;
+      font-weight: bold;
+      color: #fff;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      text-decoration: none;
+    }
+    .logo span { color: var(--gold); }
+    nav a.back {
+      color: rgba(255,255,255,0.7);
+      text-decoration: none;
+      font-size: 14px;
+    }
+    nav a.back:hover { color: #fff; }
+    .content {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+    h1 {
+      font-size: 28px;
+      color: var(--navy);
+      margin-bottom: 12px;
+    }
+    .subtitle {
+      font-size: 16px;
+      color: var(--text-light);
+      margin-bottom: 48px;
+    }
+    h2 {
+      font-size: 20px;
+      color: var(--navy);
+      margin: 36px 0 16px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+    }
+    h2:first-of-type { border-top: none; padding-top: 0; }
+    p { margin-bottom: 16px; }
+    .card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    .card h3 {
+      font-size: 16px;
+      color: var(--navy);
+      margin-bottom: 8px;
+    }
+    .card p {
+      font-size: 15px;
+      color: var(--text-light);
+      margin-bottom: 0;
+    }
+    .diagram {
+      background: var(--navy);
+      color: #fff;
+      border-radius: var(--radius);
+      padding: 28px;
+      margin: 28px 0;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      line-height: 1.6;
+      overflow-x: auto;
+    }
+    .diagram .gold { color: var(--gold); }
+    .diagram .dim { color: rgba(255,255,255,0.4); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      font-size: 14px;
+    }
+    th, td {
+      text-align: left;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      background: var(--navy);
+      color: #fff;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    td { color: var(--text); }
+    tr:last-child td { border-bottom: none; }
+    .note {
+      background: #fff;
+      border-left: 4px solid var(--gold);
+      padding: 16px 20px;
+      margin: 24px 0;
+      font-size: 14px;
+      color: var(--text-light);
+    }
+    footer {
+      background: var(--navy);
+      color: rgba(255,255,255,0.5);
+      text-align: center;
+      padding: 24px;
+      font-size: 13px;
+    }
+    footer a {
+      color: rgba(255,255,255,0.7);
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="/" class="logo">Dossier<span>.</span></a>
+    <a href="/" class="back">&larr; Terug naar home</a>
+  </div>
+</nav>
+
+<div class="content">
+  <h1>Privacy &amp; techniek</h1>
+  <p class="subtitle">Hoe Dossier omgaat met uw gegevens en die van uw cliënten.</p>
+
+  <h2>Hoe werkt een screening technisch?</h2>
+
+  <p>Wanneer u een screening uitvoert, doorzoekt Dossier openbare bronnen op de naam van uw cliënt. Hieronder ziet u precies hoe dat verloopt — en waar uw gegevens <em>niet</em> terechtkomen.</p>
+
+  <div class="diagram">
+    <span class="dim">Uw browser</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;|<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;v<br>
+    <span class="gold">Dossier server (Vercel)</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;|<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;v<br>
+    <span class="gold">Mullvad VPN (Amsterdam)</span> &larr; <span class="dim">vervangt server-IP</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;|<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;v<br>
+    <span class="dim">Google / Bing / Nieuwsbronnen</span> &larr; <span class="dim">zien alleen Mullvad-IP</span>
+  </div>
+
+  <h2>Geen digitale voetafdruk</h2>
+
+  <p>Alle zoekopdrachten naar Google en nieuwsbronnen verlopen via een Mullvad VPN-server in Amsterdam. Dit betekent:</p>
+
+  <div class="card">
+    <h3>Niet via uw kantoor-IP</h3>
+    <p>Uw kantoor-IP-adres wordt nooit gebruikt voor zoekopdrachten. Google ziet niet dat een notariskantoor of advocatenkantoor een naam opzoekt.</p>
+  </div>
+
+  <div class="card">
+    <h3>Niet via ons server-IP</h3>
+    <p>Ook het IP-adres van onze Vercel-servers wordt gemaskeerd. Google ziet alleen het IP-adres van de Mullvad VPN-server — een anonieme exit node.</p>
+  </div>
+
+  <div class="card">
+    <h3>Geen account bij Mullvad</h3>
+    <p>Mullvad is een Zweedse VPN-provider die geen logs bijhoudt en geen persoonsgegevens vereist. Er is geen koppeling tussen zoekopdrachten en uw kantoor.</p>
+  </div>
+
+  <h2>Welke diensten ontvangen welke gegevens?</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Dienst</th>
+        <th>Ontvangt</th>
+        <th>Ontvangt niet</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Serper.dev (Google/News)</td>
+        <td>Zoekopdracht (naam)</td>
+        <td>Kantoor-IP, e-mail, context</td>
+      </tr>
+      <tr>
+        <td>Sanctions.io</td>
+        <td>Naam voor sanctiecheck</td>
+        <td>Kantoorinformatie, context</td>
+      </tr>
+      <tr>
+        <td>Rechtspraak.nl</td>
+        <td>Naam voor uitspraken</td>
+        <td>Kantoorinformatie</td>
+      </tr>
+      <tr>
+        <td>KvK (api.kvk.nl)</td>
+        <td>Naam voor bedrijfsopzoek</td>
+        <td>Kantoorinformatie</td>
+      </tr>
+      <tr>
+        <td>Anthropic (Claude AI)</td>
+        <td>Zoekresultaten voor analyse</td>
+        <td>Uw identiteit, kantoorgegevens</td>
+      </tr>
+      <tr>
+        <td>Mollie</td>
+        <td>E-mail + betaalgegevens</td>
+        <td>Screeningresultaten, cliëntnamen</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Geen opslag van cliëntgegevens</h2>
+
+  <p>Cliëntnamen en screeningresultaten worden niet opgeslagen op onze servers. Het rapport wordt volledig in uw browser gegenereerd en lokaal gedownload als HTML-bestand. Wij slaan alleen op:</p>
+
+  <div class="card">
+    <h3>Wat wij wel opslaan</h3>
+    <p>Uw activatiecode, het bijbehorende e-mailadres, het aantal gebruikte credits en de bundel. Geen cliëntnamen, geen screeningresultaten, geen rapporten.</p>
+  </div>
+
+  <h2>Bewaarplicht (art. 33 Wwft)</h2>
+
+  <div class="note">
+    De bewaarplicht van cliëntonderzoeksgegevens (vijf jaar na het beëindigen van de zakelijke relatie) is de verantwoordelijkheid van uw kantoor. Dossier slaat geen screeningresultaten op — bewaar het gedownloade rapport in uw eigen dossiersysteem.
+  </div>
+
+  <h2>Samengevat</h2>
+
+  <div class="card">
+    <h3>Uw privacy, in drie zinnen</h3>
+    <p>Zoekopdrachten gaan via Mullvad VPN — uw kantoor-IP raakt nooit een zoekmachine. Cliëntnamen worden niet opgeslagen na de screening. Het rapport bestaat alleen op uw eigen computer.</p>
+  </div>
+</div>
+
+<footer>
+  <p>&copy; 2026 Dossier &middot; <a href="/">Home</a> &middot; <a href="mailto:info@dossier.nl">Contact</a></p>
+</footer>
+
+</body>
+</html>
