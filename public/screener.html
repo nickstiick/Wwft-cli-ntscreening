@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dossier — Wwft Screening</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy: #1a1a2e;
+      --navy-light: #16213e;
+      --gold: #c9a84c;
+      --gold-light: #d4b85f;
+      --cream: #f8f7f4;
+      --white: #ffffff;
+      --text: #333;
+      --text-light: #666;
+      --border: #e0ddd5;
+      --radius: 8px;
+      --green: #27ae60;
+      --orange: #e67e22;
+      --red: #c0392b;
+      --grey: #95a5a6;
+    }
+
+    body {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      color: var(--text);
+      background: var(--cream);
+      line-height: 1.6;
+    }
+
+    /* ─── NAV ──────────────────────────────── */
+    nav {
+      background: var(--navy);
+      padding: 14px 0;
+    }
+    .nav-inner {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .logo {
+      font-size: 20px;
+      font-weight: bold;
+      color: #fff;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      text-decoration: none;
+    }
+    .logo span { color: var(--gold); }
+    .credit-badge {
+      display: none;
+      background: rgba(255,255,255,0.1);
+      color: var(--gold);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-family: sans-serif;
+    }
+    .credit-badge.visible { display: block; }
+
+    /* ─── MAIN ─────────────────────────────── */
+    .container {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 32px 24px;
+    }
+
+    /* ─── ACTIVATION BAR ───────────────────── */
+    .activation-bar {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin-bottom: 28px;
+    }
+    .activation-bar.activated {
+      border-color: var(--green);
+      background: #f0faf4;
+    }
+    .activation-bar h3 {
+      font-size: 15px;
+      color: var(--navy);
+      margin-bottom: 8px;
+    }
+    .activation-row {
+      display: flex;
+      gap: 10px;
+    }
+    .activation-row input {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-family: monospace;
+      font-size: 15px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .activation-row input:focus { outline: none; border-color: var(--navy); }
+    .activation-row button {
+      padding: 10px 20px;
+      background: var(--navy);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .activation-status {
+      font-size: 13px;
+      margin-top: 8px;
+      color: var(--green);
+      display: none;
+    }
+    .activation-status.visible { display: block; }
+    .activation-error {
+      font-size: 13px;
+      margin-top: 8px;
+      color: var(--red);
+      display: none;
+    }
+    .activation-error.visible { display: block; }
+    .free-note {
+      font-size: 13px;
+      color: var(--text-light);
+      margin-top: 8px;
+    }
+
+    /* ─── FORM ─────────────────────────────── */
+    .screen-form {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 24px;
+      margin-bottom: 28px;
+    }
+    .screen-form h2 {
+      font-size: 20px;
+      color: var(--navy);
+      margin-bottom: 20px;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+    .form-group.full { grid-column: 1 / -1; }
+    .form-group label {
+      font-size: 13px;
+      color: var(--text-light);
+      margin-bottom: 5px;
+      font-family: sans-serif;
+    }
+    .form-group input,
+    .form-group select {
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-size: 15px;
+    }
+    .form-group input:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: var(--navy);
+    }
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .checkbox-group input { width: auto; }
+    .checkbox-group label {
+      font-size: 14px;
+      margin-bottom: 0;
+      color: var(--text);
+    }
+
+    /* Whitelabel section */
+    .whitelabel-section {
+      border-top: 1px solid var(--border);
+      margin-top: 20px;
+      padding-top: 20px;
+    }
+    .whitelabel-toggle {
+      font-size: 14px;
+      color: var(--navy);
+      cursor: pointer;
+      user-select: none;
+    }
+    .whitelabel-toggle::before { content: '\25B6 '; font-size: 10px; }
+    .whitelabel-toggle.open::before { content: '\25BC '; }
+    .whitelabel-fields {
+      display: none;
+      margin-top: 14px;
+    }
+    .whitelabel-fields.visible { display: grid; }
+
+    .submit-btn {
+      width: 100%;
+      padding: 14px;
+      background: var(--navy);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 20px;
+      transition: background 0.2s;
+    }
+    .submit-btn:hover { background: var(--navy-light); }
+    .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    /* ─── PROGRESS ─────────────────────────── */
+    .progress-panel {
+      display: none;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 24px;
+      margin-bottom: 28px;
+    }
+    .progress-panel.visible { display: block; }
+    .progress-panel h3 {
+      font-size: 17px;
+      color: var(--navy);
+      margin-bottom: 16px;
+    }
+    .progress-steps { list-style: none; }
+    .progress-steps li {
+      padding: 8px 0;
+      font-size: 14px;
+      color: var(--text-light);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .progress-steps li.done { color: var(--green); }
+    .progress-steps li.active { color: var(--navy); font-weight: bold; }
+    .progress-steps li.error { color: var(--red); }
+    .step-icon {
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--border);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      flex-shrink: 0;
+    }
+    .done .step-icon { background: var(--green); border-color: var(--green); color: #fff; }
+    .active .step-icon { border-color: var(--navy); }
+    .error .step-icon { background: var(--red); border-color: var(--red); color: #fff; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--border);
+      border-top-color: var(--navy);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      flex-shrink: 0;
+    }
+
+    /* ─── RESULTS ──────────────────────────── */
+    .results-panel {
+      display: none;
+    }
+    .results-panel.visible { display: block; }
+
+    .risk-banner {
+      padding: 28px;
+      border-radius: var(--radius);
+      text-align: center;
+      margin-bottom: 24px;
+      border: 2px solid;
+    }
+    .risk-banner.laag { background: #f0faf4; border-color: var(--green); color: var(--green); }
+    .risk-banner.verhoogd { background: #fef9ec; border-color: var(--orange); color: var(--orange); }
+    .risk-banner.hoog { background: #fdf0ef; border-color: var(--red); color: var(--red); }
+    .risk-banner.grijs { background: #f5f5f5; border-color: var(--grey); color: var(--grey); }
+    .risk-niveau {
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-family: sans-serif;
+      font-weight: bold;
+    }
+    .risk-score {
+      font-size: 48px;
+      font-weight: bold;
+      margin: 4px 0;
+    }
+    .risk-label {
+      font-size: 18px;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    .result-section {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+    .result-section h3 {
+      font-size: 16px;
+      color: var(--navy);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-count {
+      font-size: 12px;
+      background: var(--cream);
+      padding: 2px 8px;
+      border-radius: 10px;
+      color: var(--text-light);
+      font-family: sans-serif;
+    }
+
+    .bevinding {
+      padding: 12px 16px;
+      border-left: 4px solid;
+      margin-bottom: 10px;
+      border-radius: 0 var(--radius) var(--radius) 0;
+      background: var(--cream);
+    }
+    .bevinding.groen { border-color: var(--green); }
+    .bevinding.oranje { border-color: var(--orange); }
+    .bevinding.rood { border-color: var(--red); }
+    .bevinding.grijs { border-color: var(--grey); }
+    .bevinding-text { font-size: 14px; }
+    .bevinding-bron {
+      font-size: 12px;
+      color: var(--text-light);
+      margin-top: 4px;
+      font-family: sans-serif;
+    }
+
+    .samenvatting-text {
+      font-size: 15px;
+      line-height: 1.8;
+      color: var(--text);
+    }
+
+    .bron-item {
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+    .bron-item:last-child { border-bottom: none; }
+    .bron-item a {
+      color: var(--navy);
+      text-decoration: none;
+      font-weight: bold;
+    }
+    .bron-item a:hover { text-decoration: underline; }
+    .bron-item .snippet {
+      color: var(--text-light);
+      font-size: 13px;
+      margin-top: 2px;
+    }
+
+    .query-log {
+      font-family: monospace;
+      font-size: 12px;
+      color: var(--text-light);
+      background: var(--cream);
+      padding: 12px;
+      border-radius: var(--radius);
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .query-log div { padding: 3px 0; }
+
+    .disclaimer {
+      background: var(--cream);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      font-size: 13px;
+      color: var(--text-light);
+      margin-top: 24px;
+      line-height: 1.6;
+    }
+
+    .download-btn {
+      display: inline-block;
+      background: var(--gold);
+      color: var(--navy);
+      padding: 12px 28px;
+      border: none;
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 20px;
+      transition: background 0.2s;
+    }
+    .download-btn:hover { background: var(--gold-light); }
+
+    .watermark {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-30deg);
+      font-size: 60px;
+      color: rgba(192, 57, 43, 0.08);
+      font-weight: bold;
+      pointer-events: none;
+      z-index: 0;
+      white-space: nowrap;
+      display: none;
+    }
+
+    .no-credits-msg {
+      display: none;
+      background: #fef9ec;
+      border: 1px solid var(--orange);
+      border-radius: var(--radius);
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .no-credits-msg a {
+      color: var(--navy);
+      font-weight: bold;
+    }
+
+    @media (max-width: 600px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .activation-row { flex-direction: column; }
+      .risk-score { font-size: 36px; }
+    }
+
+    /* ─── PRINT / DOWNLOAD ─────────────────── */
+    @media print {
+      nav, .activation-bar, .screen-form, .progress-panel,
+      .download-btn, .no-credits-msg, .submit-btn { display: none !important; }
+      .results-panel { display: block !important; }
+      body { background: #fff; }
+      .container { max-width: 100%; padding: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="/" class="logo">Dossier<span>.</span></a>
+    <div class="credit-badge" id="creditBadge"></div>
+  </div>
+</nav>
+
+<div class="container">
+
+  <!-- Activatiecode -->
+  <div class="activation-bar" id="activationBar">
+    <h3>Activatiecode</h3>
+    <div class="activation-row">
+      <input type="text" id="codeInput" placeholder="DOSS-XXXX-XXXX-XXXX" maxlength="19">
+      <button id="activateBtn">Activeren</button>
+    </div>
+    <div class="activation-status" id="activationStatus"></div>
+    <div class="activation-error" id="activationError"></div>
+    <div class="free-note">Geen code? Uw eerste screening is gratis.</div>
+  </div>
+
+  <!-- No credits message -->
+  <div class="no-credits-msg" id="noCreditsMsg">
+    Geen credits meer beschikbaar. <a href="/">Koop een nieuwe bundel</a> om door te gaan.
+  </div>
+
+  <!-- Screening form -->
+  <div class="screen-form" id="screenForm">
+    <h2>Cliëntscreening</h2>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label for="naam">Volledige naam *</label>
+        <input type="text" id="naam" placeholder="Jan de Vries" required>
+      </div>
+      <div class="form-group">
+        <label for="geboortedatum">Geboortedatum</label>
+        <input type="date" id="geboortedatum">
+      </div>
+      <div class="form-group">
+        <label for="locatie">Woonplaats / vestigingsplaats</label>
+        <input type="text" id="locatie" placeholder="Amsterdam">
+      </div>
+      <div class="form-group">
+        <label for="type">Type subject</label>
+        <select id="type">
+          <option value="natuurlijk_persoon">Natuurlijk persoon</option>
+          <option value="rechtspersoon">Rechtspersoon</option>
+          <option value="ubo">UBO</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>&nbsp;</label>
+        <div class="checkbox-group">
+          <input type="checkbox" id="kvkZoeken">
+          <label for="kvkZoeken">KvK opzoeken</label>
+        </div>
+      </div>
+
+      <!-- Whitelabel -->
+      <div class="form-group full whitelabel-section">
+        <div class="whitelabel-toggle" id="whitelabelToggle">Rapport personaliseren</div>
+        <div class="whitelabel-fields form-grid" id="whitelabelFields">
+          <div class="form-group">
+            <label for="kantoorNaam">Kantoornaam</label>
+            <input type="text" id="kantoorNaam" placeholder="Hofman & Partners Notarissen">
+          </div>
+          <div class="form-group">
+            <label for="medewerker">Medewerker</label>
+            <input type="text" id="medewerker" placeholder="mr. J. Hofman">
+          </div>
+          <div class="form-group">
+            <label for="dossiernummer">Dossiernummer</label>
+            <input type="text" id="dossiernummer" placeholder="2026-0042">
+          </div>
+          <div class="form-group">
+            <label for="kantoorKleur">Kleur</label>
+            <input type="color" id="kantoorKleur" value="#1a1a2e">
+          </div>
+          <div class="form-group full">
+            <label for="kantoorLogo">Kantoorlogo (URL)</label>
+            <input type="url" id="kantoorLogo" placeholder="https://uwkantoor.nl/logo.png">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="submit-btn" id="submitBtn">Screening starten</button>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-panel" id="progressPanel">
+    <h3>Screening wordt uitgevoerd...</h3>
+    <ul class="progress-steps" id="progressSteps">
+      <li id="step-credit"><span class="step-icon"></span> Credit controleren</li>
+      <li id="step-google"><span class="step-icon"></span> Google doorzoeken</li>
+      <li id="step-nieuws"><span class="step-icon"></span> Nieuwsberichten ophalen</li>
+      <li id="step-sancties"><span class="step-icon"></span> Sanctielijsten controleren</li>
+      <li id="step-rechtspraak"><span class="step-icon"></span> Rechtspraak.nl doorzoeken</li>
+      <li id="step-analyse"><span class="step-icon"></span> AI-analyse uitvoeren</li>
+    </ul>
+  </div>
+
+  <!-- Results -->
+  <div class="results-panel" id="resultsPanel"></div>
+
+</div>
+
+<div class="watermark" id="watermark">PROEFSCREENING — NIET GELDIG ALS OFFICIEEL WWFT-DOSSIER</div>
+
+<script>
+(function() {
+  // ─── STATE ────────────────────────────────
+  let activatiecode = localStorage.getItem('dossier_code') || '';
+  let credits = parseInt(localStorage.getItem('dossier_credits') || '0', 10);
+  let proefGebruikt = localStorage.getItem('dossier_proef_gebruikt') === 'true';
+  let isProef = false;
+
+  const $ = id => document.getElementById(id);
+  const codeInput = $('codeInput');
+  const activateBtn = $('activateBtn');
+  const creditBadge = $('creditBadge');
+  const activationBar = $('activationBar');
+  const activationStatus = $('activationStatus');
+  const activationError = $('activationError');
+  const submitBtn = $('submitBtn');
+  const progressPanel = $('progressPanel');
+  const resultsPanel = $('resultsPanel');
+  const noCreditsMsg = $('noCreditsMsg');
+  const watermark = $('watermark');
+
+  // ─── INIT ─────────────────────────────────
+  if (activatiecode) {
+    codeInput.value = activatiecode;
+    validateCode(activatiecode, false);
+  }
+
+  // Whitelabel toggle
+  $('whitelabelToggle').addEventListener('click', function() {
+    this.classList.toggle('open');
+    $('whitelabelFields').classList.toggle('visible');
+  });
+
+  // ─── ACTIVATE ─────────────────────────────
+  activateBtn.addEventListener('click', () => {
+    const code = codeInput.value.trim().toUpperCase();
+    if (!code) return;
+    validateCode(code, true);
+  });
+
+  codeInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') activateBtn.click();
+  });
+
+  async function validateCode(code, showErrors) {
+    try {
+      activationError.classList.remove('visible');
+      const res = await fetch('/api/activate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        if (showErrors) {
+          activationError.textContent = data.error;
+          activationError.classList.add('visible');
+        }
+        return;
+      }
+
+      activatiecode = code;
+      credits = data.credits_over;
+      localStorage.setItem('dossier_code', code);
+      localStorage.setItem('dossier_credits', credits);
+
+      activationBar.classList.add('activated');
+      activationStatus.textContent = `Geactiveerd: ${credits} van ${data.credits_totaal} credits beschikbaar (${data.bundel})`;
+      activationStatus.classList.add('visible');
+      updateCreditBadge();
+
+      if (credits <= 0) {
+        noCreditsMsg.style.display = 'block';
+      }
+    } catch {
+      if (showErrors) {
+        activationError.textContent = 'Kon de code niet valideren. Probeer het opnieuw.';
+        activationError.classList.add('visible');
+      }
+    }
+  }
+
+  function updateCreditBadge() {
+    if (credits > 0) {
+      creditBadge.textContent = credits + ' credits';
+      creditBadge.classList.add('visible');
+    } else {
+      creditBadge.classList.remove('visible');
+    }
+  }
+
+  // ─── SUBMIT SCREENING ─────────────────────
+  submitBtn.addEventListener('click', startScreening);
+
+  async function startScreening() {
+    const naam = $('naam').value.trim();
+    if (!naam) {
+      $('naam').focus();
+      return;
+    }
+
+    // Determine tier
+    isProef = false;
+    if (!activatiecode || credits <= 0) {
+      if (proefGebruikt) {
+        noCreditsMsg.style.display = 'block';
+        return;
+      }
+      isProef = true;
+    }
+
+    // If not proef, deduct credit server-side
+    if (!isProef && activatiecode) {
+      setStep('step-credit', 'active');
+      progressPanel.classList.add('visible');
+      try {
+        const res = await fetch('/api/activate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: activatiecode, gebruik: true })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setStep('step-credit', 'error');
+          if (res.status === 402) {
+            credits = 0;
+            localStorage.setItem('dossier_credits', '0');
+            noCreditsMsg.style.display = 'block';
+            updateCreditBadge();
+          }
+          return;
+        }
+        credits = data.credits_over;
+        localStorage.setItem('dossier_credits', credits);
+        updateCreditBadge();
+        setStep('step-credit', 'done');
+      } catch {
+        setStep('step-credit', 'error');
+        return;
+      }
+    } else {
+      progressPanel.classList.add('visible');
+      setStep('step-credit', 'done');
+    }
+
+    submitBtn.disabled = true;
+    resultsPanel.classList.remove('visible');
+    resultsPanel.innerHTML = '';
+
+    // Show progress
+    setStep('step-google', 'active');
+    setStep('step-nieuws', 'active');
+    setStep('step-sancties', 'active');
+    setStep('step-rechtspraak', 'active');
+
+    try {
+      const body = {
+        naam,
+        geboortedatum: $('geboortedatum').value || null,
+        type: $('type').value,
+        locatie: $('locatie').value.trim() || null,
+        tier: isProef ? 'basis' : 'uitgebreid',
+        kvkZoeken: $('kvkZoeken').checked
+      };
+
+      const res = await fetch('/api/screen', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+      setStep('step-google', 'done');
+      setStep('step-nieuws', 'done');
+      setStep('step-sancties', 'done');
+      setStep('step-rechtspraak', 'done');
+      setStep('step-analyse', 'active');
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setStep('step-analyse', 'error');
+        alert(data.error || 'Screening mislukt.');
+        submitBtn.disabled = false;
+        return;
+      }
+
+      setStep('step-analyse', 'done');
+
+      if (isProef) {
+        proefGebruikt = true;
+        localStorage.setItem('dossier_proef_gebruikt', 'true');
+        watermark.style.display = 'block';
+      }
+
+      renderResults(data);
+    } catch (err) {
+      console.error(err);
+      alert('Er ging iets mis bij de screening. Probeer het opnieuw.');
+    }
+
+    submitBtn.disabled = false;
+  }
+
+  function setStep(id, state) {
+    const el = $(id);
+    el.className = state;
+    const icon = el.querySelector('.step-icon') || el.querySelector('.spinner');
+    if (state === 'active') {
+      if (icon) {
+        const sp = document.createElement('span');
+        sp.className = 'spinner';
+        icon.replaceWith(sp);
+      }
+    } else if (state === 'done') {
+      const sp = el.querySelector('.spinner');
+      const ic = document.createElement('span');
+      ic.className = 'step-icon';
+      ic.textContent = '\u2713';
+      if (sp) sp.replaceWith(ic);
+    } else if (state === 'error') {
+      const sp = el.querySelector('.spinner');
+      const ic = document.createElement('span');
+      ic.className = 'step-icon';
+      ic.textContent = '\u2717';
+      if (sp) sp.replaceWith(ic);
+    }
+  }
+
+  // ─── RENDER RESULTS ───────────────────────
+  function renderResults(data) {
+    const a = data.analyse || {};
+    const r = data.resultaten || {};
+    const niveauLabel = { laag: 'Laag risico', verhoogd: 'Verhoogd risico', hoog: 'Hoog risico', grijs: 'Onbekend' };
+    const niveauClass = a.risico_niveau || 'grijs';
+
+    // Whitelabel data
+    const kantoor = $('kantoorNaam').value.trim();
+    const medewerker = $('medewerker').value.trim();
+    const dossiernr = $('dossiernummer').value.trim();
+    const kleur = $('kantoorKleur').value;
+    const logoUrl = $('kantoorLogo').value.trim();
+
+    let html = '';
+
+    // Report header (for download)
+    html += `<div class="report-header" id="reportContent">`;
+
+    if (kantoor || logoUrl) {
+      html += `<div style="text-align:center; margin-bottom:24px; padding-bottom:16px; border-bottom: 2px solid ${kleur};">`;
+      if (logoUrl) html += `<img src="${escapeHtml(logoUrl)}" alt="Logo" style="max-height:60px; margin-bottom:8px;" onerror="this.style.display='none'"><br>`;
+      if (kantoor) html += `<strong style="font-size:18px; color:${kleur};">${escapeHtml(kantoor)}</strong><br>`;
+      html += `</div>`;
+    }
+
+    html += `<div style="text-align:center; font-size:13px; color:var(--text-light); margin-bottom:24px; font-family:sans-serif;">`;
+    html += `Wwft Cliëntscreening — ${new Date(data.tijdstip).toLocaleString('nl-NL')}`;
+    if (medewerker) html += `<br>Medewerker: ${escapeHtml(medewerker)}`;
+    if (dossiernr) html += `<br>Dossiernummer: ${escapeHtml(dossiernr)}`;
+    html += `<br>Subject: <strong>${escapeHtml(data.naam)}</strong>`;
+    if (data.geboortedatum) html += ` (${data.geboortedatum})`;
+    if (data.locatie) html += ` — ${escapeHtml(data.locatie)}`;
+    html += `</div>`;
+
+    // Risk banner
+    html += `<div class="risk-banner ${niveauClass}">`;
+    html += `<div class="risk-niveau">Risicobeoordeling</div>`;
+    if (a.risico_score >= 0) html += `<div class="risk-score">${a.risico_score}</div>`;
+    html += `<div class="risk-label">${niveauLabel[niveauClass] || 'Onbekend'}</div>`;
+    html += `</div>`;
+
+    // Samenvatting
+    html += `<div class="result-section">`;
+    html += `<h3>Samenvatting</h3>`;
+    html += `<div class="samenvatting-text">${escapeHtml(a.samenvatting || '')}</div>`;
+    if (a.wwft_oordeel) {
+      html += `<div style="margin-top:12px; padding:12px; background:var(--cream); border-radius:var(--radius); font-size:14px;">`;
+      html += `<strong>Wwft-oordeel:</strong> ${escapeHtml(a.wwft_oordeel)}`;
+      html += `</div>`;
+    }
+    html += `</div>`;
+
+    // Bevindingen
+    if (a.bevindingen && a.bevindingen.length > 0) {
+      html += `<div class="result-section">`;
+      html += `<h3>Risico-indicatoren ter beoordeling <span class="section-count">${a.bevindingen.length}</span></h3>`;
+      a.bevindingen.forEach(b => {
+        html += `<div class="bevinding ${b.ernst || 'grijs'}">`;
+        html += `<div class="bevinding-text">${escapeHtml(b.beschrijving)}</div>`;
+        html += `<div class="bevinding-bron">${escapeHtml(b.categorie || '')} ${b.bron ? '— ' + escapeHtml(b.bron) : ''}</div>`;
+        html += `</div>`;
+      });
+      html += `</div>`;
+    }
+
+    // Risico-uitleg
+    if (a.risico_uitleg) {
+      html += `<div class="result-section">`;
+      html += `<h3>Toelichting risicobeoordeling</h3>`;
+      html += `<div class="samenvatting-text">${escapeHtml(a.risico_uitleg)}</div>`;
+      html += `</div>`;
+    }
+
+    // Sancties
+    html += `<div class="result-section">`;
+    html += `<h3>Sanctielijsten <span class="section-count">${r.sancties?.resultaten?.length || 0} hits</span></h3>`;
+    if (r.sancties?.resultaten?.length > 0) {
+      r.sancties.resultaten.forEach(s => {
+        html += `<div class="bevinding rood">`;
+        html += `<div class="bevinding-text"><strong>${escapeHtml(s.naam)}</strong> — Score: ${s.score}%</div>`;
+        html += `<div class="bevinding-bron">${escapeHtml(s.lijst || '')} ${s.details ? '— ' + escapeHtml(s.details) : ''}</div>`;
+        html += `</div>`;
+      });
+    } else {
+      html += `<div class="bevinding groen"><div class="bevinding-text">Geen matches gevonden op EU, OFAC of VN sanctielijsten.</div></div>`;
+    }
+    if (!r.sancties?.gecontroleerd) {
+      html += `<div class="bevinding grijs"><div class="bevinding-text">Sanctielijsten konden niet worden gecontroleerd.</div></div>`;
+    }
+    html += `</div>`;
+
+    // Rechtspraak
+    html += `<div class="result-section">`;
+    html += `<h3>Rechtspraak.nl <span class="section-count">${r.rechtspraak?.resultaten?.length || 0}</span></h3>`;
+    if (r.rechtspraak?.resultaten?.length > 0) {
+      r.rechtspraak.resultaten.forEach(rr => {
+        html += `<div class="bron-item">`;
+        if (rr.link) html += `<a href="${escapeHtml(rr.link)}" target="_blank" rel="noopener">${escapeHtml(rr.titel || rr.ecli)}</a>`;
+        else html += `<strong>${escapeHtml(rr.titel || rr.ecli)}</strong>`;
+        html += `<div class="snippet">${escapeHtml(rr.instantie || '')} ${rr.datum ? '— ' + rr.datum : ''}</div>`;
+        if (rr.samenvatting) html += `<div class="snippet">${escapeHtml(rr.samenvatting)}</div>`;
+        html += `</div>`;
+      });
+    } else {
+      html += `<div class="bevinding groen"><div class="bevinding-text">Geen uitspraken gevonden.</div></div>`;
+    }
+    html += `</div>`;
+
+    // KvK
+    if (r.kvk?.resultaten?.length > 0) {
+      html += `<div class="result-section">`;
+      html += `<h3>KvK <span class="section-count">${r.kvk.resultaten.length}</span></h3>`;
+      r.kvk.resultaten.forEach(k => {
+        html += `<div class="bron-item">`;
+        html += `<strong>${escapeHtml(k.naam)}</strong> — KvK: ${escapeHtml(k.kvkNummer)}`;
+        if (k.adres) html += `<div class="snippet">${escapeHtml(k.adres)}</div>`;
+        html += `</div>`;
+      });
+      html += `</div>`;
+    }
+
+    // Google resultaten
+    if (r.google?.length > 0) {
+      html += `<div class="result-section">`;
+      html += `<h3>Webresultaten <span class="section-count">${r.google.length}</span></h3>`;
+      r.google.slice(0, 15).forEach(g => {
+        html += `<div class="bron-item">`;
+        html += `<a href="${escapeHtml(g.link)}" target="_blank" rel="noopener">${escapeHtml(g.titel)}</a>`;
+        if (g.snippet) html += `<div class="snippet">${escapeHtml(g.snippet)}</div>`;
+        html += `</div>`;
+      });
+      html += `</div>`;
+    }
+
+    // Nieuws
+    if (r.nieuws?.length > 0) {
+      html += `<div class="result-section">`;
+      html += `<h3>Nieuwsberichten <span class="section-count">${r.nieuws.length}</span></h3>`;
+      r.nieuws.forEach(n => {
+        html += `<div class="bron-item">`;
+        html += `<a href="${escapeHtml(n.link)}" target="_blank" rel="noopener">${escapeHtml(n.titel)}</a>`;
+        if (n.bron || n.datum) html += `<div class="snippet">${escapeHtml(n.bron || '')} ${n.datum ? '— ' + n.datum : ''}</div>`;
+        if (n.snippet) html += `<div class="snippet">${escapeHtml(n.snippet)}</div>`;
+        html += `</div>`;
+      });
+      html += `</div>`;
+    }
+
+    // Queries log
+    if (r.queries?.length > 0) {
+      html += `<div class="result-section">`;
+      html += `<h3>Uitgevoerde zoekopdrachten</h3>`;
+      html += `<div class="query-log">`;
+      r.queries.forEach(q => {
+        html += `<div>[${q.tijdstip?.slice(11, 19) || ''}] ${escapeHtml(q.type)}: ${escapeHtml(q.query)}</div>`;
+      });
+      html += `</div></div>`;
+    }
+
+    // Disclaimer
+    html += `<div class="disclaimer">`;
+    html += `<strong>Disclaimer:</strong> Dit rapport is een hulpmiddel bij de uitvoering van het cliëntonderzoek als bedoeld in de Wwft. Het vervangt niet de wettelijke verplichting van de verantwoordelijke instelling. De verantwoordelijke instelling blijft te allen tijde zelf verantwoordelijk voor de naleving van de Wwft en de beoordeling van de risico's.`;
+    if (isProef) {
+      html += `<br><br><strong style="color:var(--red);">PROEFSCREENING — Dit rapport is niet geldig als officieel Wwft-dossier.</strong>`;
+    }
+    html += `</div>`;
+
+    html += `</div>`; // close report-header
+
+    // Download button
+    html += `<div style="text-align:center;">`;
+    html += `<button class="download-btn" onclick="downloadReport()">Rapport downloaden (HTML)</button>`;
+    html += `</div>`;
+
+    // After-proef CTA
+    if (isProef) {
+      html += `<div style="text-align:center; margin-top:20px; padding:20px; background:var(--white); border:1px solid var(--border); border-radius:var(--radius);">`;
+      html += `<p style="margin-bottom:12px; font-size:15px;">Tevreden? Koop een bundel voor volledige rapporten zonder watermerk.</p>`;
+      html += `<a href="/#prijzen" style="display:inline-block; background:var(--gold); color:var(--navy); padding:10px 24px; border-radius:var(--radius); font-weight:bold; text-decoration:none;">Bundel kopen</a>`;
+      html += `</div>`;
+    }
+
+    resultsPanel.innerHTML = html;
+    resultsPanel.classList.add('visible');
+    resultsPanel.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  // ─── DOWNLOAD RAPPORT ─────────────────────
+  window.downloadReport = function() {
+    const content = document.getElementById('reportContent');
+    if (!content) return;
+
+    const kantoorKleur = $('kantoorKleur').value;
+
+    const htmlDoc = `<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<title>Wwft Screening Rapport — ${escapeHtml($('naam').value)}</title>
+<style>
+  body { font-family: Georgia, serif; max-width: 800px; margin: 0 auto; padding: 40px 24px; color: #333; line-height: 1.6; background: #fff; }
+  .risk-banner { padding: 24px; border-radius: 8px; text-align: center; margin-bottom: 24px; border: 2px solid; }
+  .risk-banner.laag { background: #f0faf4; border-color: #27ae60; color: #27ae60; }
+  .risk-banner.verhoogd { background: #fef9ec; border-color: #e67e22; color: #e67e22; }
+  .risk-banner.hoog { background: #fdf0ef; border-color: #c0392b; color: #c0392b; }
+  .risk-banner.grijs { background: #f5f5f5; border-color: #95a5a6; color: #95a5a6; }
+  .risk-niveau { font-size: 12px; text-transform: uppercase; letter-spacing: 2px; font-family: sans-serif; font-weight: bold; }
+  .risk-score { font-size: 42px; font-weight: bold; margin: 4px 0; }
+  .risk-label { font-size: 16px; font-weight: bold; text-transform: uppercase; }
+  .result-section { border: 1px solid #e0ddd5; border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+  .result-section h3 { font-size: 15px; color: #1a1a2e; margin-bottom: 10px; }
+  .section-count { font-size: 11px; background: #f8f7f4; padding: 2px 6px; border-radius: 10px; color: #666; font-family: sans-serif; }
+  .bevinding { padding: 10px 14px; border-left: 4px solid; margin-bottom: 8px; border-radius: 0 8px 8px 0; background: #f8f7f4; }
+  .bevinding.groen { border-color: #27ae60; }
+  .bevinding.oranje { border-color: #e67e22; }
+  .bevinding.rood { border-color: #c0392b; }
+  .bevinding.grijs { border-color: #95a5a6; }
+  .bevinding-text { font-size: 13px; }
+  .bevinding-bron { font-size: 11px; color: #666; margin-top: 3px; font-family: sans-serif; }
+  .samenvatting-text { font-size: 14px; line-height: 1.7; }
+  .bron-item { padding: 8px 0; border-bottom: 1px solid #e0ddd5; font-size: 13px; }
+  .bron-item:last-child { border-bottom: none; }
+  .bron-item a { color: #1a1a2e; }
+  .snippet { color: #666; font-size: 12px; margin-top: 2px; }
+  .query-log { font-family: monospace; font-size: 11px; color: #666; background: #f8f7f4; padding: 10px; border-radius: 8px; }
+  .query-log div { padding: 2px 0; }
+  .disclaimer { background: #f8f7f4; border: 1px solid #e0ddd5; border-radius: 8px; padding: 14px 18px; font-size: 12px; color: #666; margin-top: 20px; line-height: 1.6; }
+  ${isProef ? '.watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%) rotate(-30deg); font-size: 50px; color: rgba(192,57,43,0.08); font-weight: bold; pointer-events: none; }' : ''}
+  @media print { body { padding: 20px; } }
+</style>
+</head>
+<body>
+${isProef ? '<div class="watermark">PROEFSCREENING</div>' : ''}
+${content.innerHTML}
+</body>
+</html>`;
+
+    const blob = new Blob([htmlDoc], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `wwft-rapport-${$('naam').value.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().slice(0,10)}.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // ─── UTIL ─────────────────────────────────
+  function escapeHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+})();
+</script>
+
+</body>
+</html>

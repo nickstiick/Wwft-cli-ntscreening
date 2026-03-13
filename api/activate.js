@@ -1,0 +1,71 @@
+const { kv } = require('@vercel/kv');
+
+module.exports = async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const { code, gebruik } = req.body;
+
+  if (!code) {
+    return res.status(400).json({ error: 'Geen activatiecode opgegeven.' });
+  }
+
+  // Valideer formaat
+  const codeRegex = /^DOSS-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/;
+  if (!codeRegex.test(code.toUpperCase())) {
+    return res.status(400).json({ error: 'Ongeldig codeformaat. Verwacht: DOSS-XXXX-XXXX-XXXX' });
+  }
+
+  try {
+    const raw = await kv.get(code.toUpperCase());
+    if (!raw) {
+      return res.status(404).json({ error: 'Activatiecode niet gevonden of verlopen.' });
+    }
+
+    const record = typeof raw === 'string' ? JSON.parse(raw) : raw;
+
+    // Controleer geldigheid
+    if (new Date(record.geldig_tot) < new Date()) {
+      return res.status(410).json({ error: 'Uw activatiecode is verlopen. Koop een nieuwe bundel op dossier.nl.' });
+    }
+
+    const creditsOver = record.credits_totaal - record.credits_gebruikt;
+
+    // Als gebruik=true, schrijf een credit af
+    if (gebruik) {
+      if (creditsOver <= 0) {
+        return res.status(402).json({
+          error: 'Geen credits meer beschikbaar.',
+          credits_over: 0,
+          koopUrl: '/'
+        });
+      }
+
+      record.credits_gebruikt += 1;
+      await kv.set(code.toUpperCase(), JSON.stringify(record), {
+        ex: Math.max(1, Math.floor((new Date(record.geldig_tot) - new Date()) / 1000))
+      });
+
+      return res.status(200).json({
+        geldig: true,
+        credits_over: record.credits_totaal - record.credits_gebruikt,
+        credits_totaal: record.credits_totaal,
+        bundel: record.bundel,
+        geldig_tot: record.geldig_tot
+      });
+    }
+
+    // Alleen valideren, geen credit afschrijven
+    return res.status(200).json({
+      geldig: true,
+      credits_over: creditsOver,
+      credits_totaal: record.credits_totaal,
+      bundel: record.bundel,
+      geldig_tot: record.geldig_tot
+    });
+  } catch (error) {
+    console.error('Activate error:', error);
+    return res.status(500).json({ error: 'Er ging iets mis bij het valideren van uw code.' });
+  }
+};

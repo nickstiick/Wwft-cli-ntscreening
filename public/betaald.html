@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Betaling ontvangen — Dossier</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy: #1a1a2e;
+      --gold: #c9a84c;
+      --cream: #f8f7f4;
+      --text: #333;
+      --text-light: #666;
+      --border: #e0ddd5;
+      --radius: 8px;
+    }
+    body {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      background: var(--cream);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 48px 40px;
+      max-width: 520px;
+      text-align: center;
+    }
+    .checkmark {
+      width: 64px;
+      height: 64px;
+      background: var(--navy);
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 24px;
+      font-size: 28px;
+      color: var(--gold);
+    }
+    h1 {
+      font-size: 24px;
+      color: var(--navy);
+      margin-bottom: 16px;
+    }
+    p {
+      color: var(--text-light);
+      line-height: 1.7;
+      margin-bottom: 12px;
+    }
+    .highlight {
+      background: var(--cream);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin: 24px 0;
+    }
+    .highlight strong { color: var(--navy); }
+    a {
+      color: var(--navy);
+      font-weight: bold;
+    }
+    .cta {
+      display: inline-block;
+      background: var(--gold);
+      color: var(--navy);
+      padding: 12px 28px;
+      border-radius: var(--radius);
+      text-decoration: none;
+      font-weight: bold;
+      margin-top: 20px;
+      transition: background 0.2s;
+    }
+    .cta:hover { background: #d4b85f; }
+    .logo {
+      font-size: 18px;
+      font-weight: bold;
+      color: var(--navy);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 32px;
+    }
+    .logo span { color: var(--gold); }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">Dossier<span>.</span></div>
+    <div class="checkmark">&#10003;</div>
+    <h1>Betaling ontvangen</h1>
+    <p>Uw betaling is succesvol verwerkt.</p>
+    <div class="highlight">
+      <strong>Uw activatiecode wordt per e-mail verzonden.</strong><br>
+      <span style="font-size: 14px; color: var(--text-light);">Dit kan enkele minuten duren. Controleer eventueel uw spamfolder.</span>
+    </div>
+    <p>Zodra u de code heeft ontvangen, kunt u deze invoeren in de screener om te starten.</p>
+    <a href="/screener" class="cta">Naar de screener</a>
+  </div>
+</body>
+</html>

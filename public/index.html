@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dossier — Wwft cliëntscreening voor notarissen en advocaten</title>
+  <meta name="description" content="Het opzoekwerk gedaan. In 60 seconden. Wwft cliëntscreening voor MKB notarissen en advocaten.">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy: #1a1a2e;
+      --navy-light: #16213e;
+      --gold: #c9a84c;
+      --gold-light: #d4b85f;
+      --cream: #f8f7f4;
+      --text: #333;
+      --text-light: #666;
+      --border: #e0ddd5;
+      --radius: 8px;
+    }
+
+    body {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      color: var(--text);
+      background: var(--cream);
+      line-height: 1.7;
+    }
+
+    /* Navigation */
+    nav {
+      background: var(--navy);
+      padding: 16px 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .logo {
+      font-size: 22px;
+      font-weight: bold;
+      color: #fff;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+    .logo span { color: var(--gold); }
+    nav a {
+      color: rgba(255,255,255,0.8);
+      text-decoration: none;
+      font-size: 15px;
+      margin-left: 28px;
+      transition: color 0.2s;
+    }
+    nav a:hover { color: #fff; }
+
+    /* Hero */
+    .hero {
+      background: var(--navy);
+      color: #fff;
+      padding: 80px 24px 100px;
+      text-align: center;
+    }
+    .hero h1 {
+      font-size: clamp(28px, 5vw, 48px);
+      font-weight: normal;
+      max-width: 700px;
+      margin: 0 auto 24px;
+      line-height: 1.3;
+    }
+    .hero h1 em {
+      color: var(--gold);
+      font-style: normal;
+    }
+    .hero p {
+      font-size: 18px;
+      color: rgba(255,255,255,0.7);
+      max-width: 540px;
+      margin: 0 auto 40px;
+    }
+    .hero-cta {
+      display: inline-block;
+      background: var(--gold);
+      color: var(--navy);
+      padding: 14px 36px;
+      border-radius: var(--radius);
+      font-size: 16px;
+      font-weight: bold;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+    .hero-cta:hover { background: var(--gold-light); }
+    .hero-sub {
+      font-size: 14px;
+      color: rgba(255,255,255,0.5);
+      margin-top: 16px;
+    }
+
+    /* Features */
+    .features {
+      max-width: 1100px;
+      margin: -40px auto 0;
+      padding: 0 24px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      position: relative;
+      z-index: 10;
+    }
+    .feature-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      text-align: center;
+    }
+    .feature-icon {
+      font-size: 32px;
+      margin-bottom: 16px;
+    }
+    .feature-card h3 {
+      font-size: 18px;
+      margin-bottom: 8px;
+      color: var(--navy);
+    }
+    .feature-card p {
+      font-size: 15px;
+      color: var(--text-light);
+    }
+
+    /* How it works */
+    .how {
+      max-width: 800px;
+      margin: 80px auto;
+      padding: 0 24px;
+      text-align: center;
+    }
+    .how h2 {
+      font-size: 28px;
+      color: var(--navy);
+      margin-bottom: 48px;
+    }
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 32px;
+      text-align: center;
+    }
+    .step-num {
+      width: 40px;
+      height: 40px;
+      background: var(--navy);
+      color: var(--gold);
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      margin-bottom: 12px;
+    }
+    .steps h4 {
+      color: var(--navy);
+      margin-bottom: 6px;
+    }
+    .steps p {
+      font-size: 14px;
+      color: var(--text-light);
+    }
+
+    /* Pricing */
+    .pricing {
+      background: #fff;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 80px 24px;
+      text-align: center;
+    }
+    .pricing h2 {
+      font-size: 28px;
+      color: var(--navy);
+      margin-bottom: 12px;
+    }
+    .pricing > p {
+      color: var(--text-light);
+      margin-bottom: 48px;
+      font-size: 16px;
+    }
+    .pricing-grid {
+      max-width: 960px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 24px;
+    }
+    .plan {
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 36px 28px;
+      position: relative;
+      transition: border-color 0.2s;
+    }
+    .plan:hover { border-color: var(--gold); }
+    .plan.featured {
+      border-color: var(--navy);
+    }
+    .plan-badge {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--navy);
+      color: var(--gold);
+      font-size: 12px;
+      font-weight: bold;
+      padding: 4px 16px;
+      border-radius: 20px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .plan h3 {
+      font-size: 20px;
+      color: var(--navy);
+      margin-bottom: 4px;
+    }
+    .plan .plan-desc {
+      font-size: 14px;
+      color: var(--text-light);
+      margin-bottom: 20px;
+    }
+    .plan .price {
+      font-size: 42px;
+      font-weight: bold;
+      color: var(--navy);
+    }
+    .plan .price span {
+      font-size: 16px;
+      font-weight: normal;
+      color: var(--text-light);
+    }
+    .plan .per-rapport {
+      font-size: 14px;
+      color: var(--text-light);
+      margin: 4px 0 24px;
+    }
+    .plan ul {
+      list-style: none;
+      text-align: left;
+      margin-bottom: 28px;
+    }
+    .plan ul li {
+      font-size: 14px;
+      padding: 6px 0;
+      color: var(--text);
+      position: relative;
+      padding-left: 24px;
+    }
+    .plan ul li::before {
+      content: '\2713';
+      position: absolute;
+      left: 0;
+      color: var(--gold);
+      font-weight: bold;
+    }
+    .plan-btn {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      border: 2px solid var(--navy);
+      background: transparent;
+      color: var(--navy);
+      border-radius: var(--radius);
+      font-size: 15px;
+      font-family: inherit;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .plan-btn:hover, .plan.featured .plan-btn {
+      background: var(--navy);
+      color: #fff;
+    }
+    .plan.featured .plan-btn:hover {
+      background: var(--navy-light);
+    }
+
+    /* Checkout modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal {
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 40px;
+      max-width: 420px;
+      width: 90%;
+      position: relative;
+    }
+    .modal h3 {
+      color: var(--navy);
+      margin-bottom: 4px;
+    }
+    .modal .modal-price {
+      color: var(--gold);
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+    .modal label {
+      display: block;
+      font-size: 14px;
+      color: var(--text-light);
+      margin-bottom: 6px;
+    }
+    .modal input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-size: 15px;
+      margin-bottom: 20px;
+    }
+    .modal input:focus {
+      outline: none;
+      border-color: var(--navy);
+    }
+    .modal-submit {
+      width: 100%;
+      padding: 14px;
+      background: var(--navy);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .modal-submit:hover { background: var(--navy-light); }
+    .modal-submit:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .modal-close {
+      position: absolute;
+      top: 12px;
+      right: 16px;
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: var(--text-light);
+    }
+    .modal-error {
+      color: #c0392b;
+      font-size: 14px;
+      margin-bottom: 12px;
+      display: none;
+    }
+    .modal-methods {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .modal-methods span {
+      font-size: 12px;
+      background: var(--cream);
+      padding: 4px 10px;
+      border-radius: 4px;
+      color: var(--text-light);
+    }
+
+    /* Try free */
+    .try-free {
+      max-width: 600px;
+      margin: 80px auto;
+      padding: 0 24px;
+      text-align: center;
+    }
+    .try-free h2 {
+      font-size: 24px;
+      color: var(--navy);
+      margin-bottom: 12px;
+    }
+    .try-free p {
+      color: var(--text-light);
+      margin-bottom: 28px;
+    }
+    .try-free a {
+      display: inline-block;
+      background: var(--gold);
+      color: var(--navy);
+      padding: 12px 32px;
+      border-radius: var(--radius);
+      font-weight: bold;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+    .try-free a:hover { background: var(--gold-light); }
+
+    /* Footer */
+    footer {
+      background: var(--navy);
+      color: rgba(255,255,255,0.5);
+      text-align: center;
+      padding: 32px 24px;
+      font-size: 13px;
+    }
+    footer a {
+      color: rgba(255,255,255,0.7);
+      text-decoration: none;
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .hero { padding: 60px 20px 80px; }
+      .plan { padding: 28px 20px; }
+      .modal { padding: 28px 20px; }
+      nav a { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <div class="logo">Dossier<span>.</span></div>
+    <div>
+      <a href="#hoe-werkt-het">Hoe werkt het</a>
+      <a href="#prijzen">Prijzen</a>
+      <a href="/screener">Screener openen</a>
+    </div>
+  </div>
+</nav>
+
+<section class="hero">
+  <h1>Het opzoekwerk gedaan.<br><em>In 60 seconden.</em></h1>
+  <p>Wwft cliëntscreening voor notarissen en advocaten. U houdt het oordeel.</p>
+  <a href="/screener" class="hero-cta">Gratis proefscreening starten</a>
+  <div class="hero-sub">Geen account nodig. Eerste screening gratis.</div>
+</section>
+
+<div class="features">
+  <div class="feature-card">
+    <div class="feature-icon">&#128269;</div>
+    <h3>Brede bronnen</h3>
+    <p>Google, nieuwsberichten, sanctielijsten, Rechtspraak.nl en KvK — in één keer doorzocht.</p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">&#9878;</div>
+    <h3>Risicoanalyse</h3>
+    <p>AI-gestuurde analyse beoordeelt alle resultaten en geeft een helder risicoprofiel.</p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">&#128196;</div>
+    <h3>Dossierrapport</h3>
+    <p>Whitelabel rapport met bronverwijzingen. Klaar om op te slaan in uw dossier.</p>
+  </div>
+</div>
+
+<section class="how" id="hoe-werkt-het">
+  <h2>Hoe werkt het</h2>
+  <div class="steps">
+    <div>
+      <div class="step-num">1</div>
+      <h4>Gegevens invoeren</h4>
+      <p>Naam, geboortedatum en type subject (natuurlijk persoon of rechtspersoon).</p>
+    </div>
+    <div>
+      <div class="step-num">2</div>
+      <h4>Automatisch zoeken</h4>
+      <p>Openbare bronnen, sanctielijsten, rechtspraak en KvK worden doorzocht.</p>
+    </div>
+    <div>
+      <div class="step-num">3</div>
+      <h4>Rapport downloaden</h4>
+      <p>Download uw rapport met risicobeoordeling en alle bronverwijzingen.</p>
+    </div>
+  </div>
+</section>
+
+<section class="pricing" id="prijzen">
+  <h2>Eenvoudige prijzen</h2>
+  <p>Betaal per rapport. Geen abonnement, geen verplichtingen.</p>
+  <div class="pricing-grid">
+    <div class="plan">
+      <h3>Starter</h3>
+      <div class="plan-desc">Voor incidenteel gebruik</div>
+      <div class="price">&euro;45 <span>ex. btw</span></div>
+      <div class="per-rapport">&euro;9 per rapport</div>
+      <ul>
+        <li>5 rapporten</li>
+        <li>365 dagen geldig</li>
+        <li>Alle bronnen</li>
+        <li>Whitelabel rapporten</li>
+      </ul>
+      <button class="plan-btn" data-bundel="starter" data-naam="Starter" data-prijs="45">Kopen</button>
+    </div>
+    <div class="plan featured">
+      <div class="plan-badge">Populair</div>
+      <h3>Kantoor</h3>
+      <div class="plan-desc">Voor regelmatig gebruik</div>
+      <div class="price">&euro;175 <span>ex. btw</span></div>
+      <div class="per-rapport">&euro;7 per rapport</div>
+      <ul>
+        <li>25 rapporten</li>
+        <li>365 dagen geldig</li>
+        <li>Alle bronnen</li>
+        <li>Whitelabel rapporten</li>
+      </ul>
+      <button class="plan-btn" data-bundel="kantoor" data-naam="Kantoor" data-prijs="175">Kopen</button>
+    </div>
+    <div class="plan">
+      <h3>Jaarcontract</h3>
+      <div class="plan-desc">Voor intensief gebruik</div>
+      <div class="price">&euro;499 <span>ex. btw</span></div>
+      <div class="per-rapport">&euro;4,99 per rapport</div>
+      <ul>
+        <li>100 rapporten</li>
+        <li>365 dagen geldig</li>
+        <li>Alle bronnen</li>
+        <li>Whitelabel rapporten</li>
+      </ul>
+      <button class="plan-btn" data-bundel="jaarcontract" data-naam="Jaarcontract" data-prijs="499">Kopen</button>
+    </div>
+  </div>
+</section>
+
+<section class="try-free">
+  <h2>Eerst proberen?</h2>
+  <p>Uw eerste screening is gratis. Geen account, geen creditcard.</p>
+  <a href="/screener">Gratis proefscreening starten</a>
+</section>
+
+<footer>
+  <p>Dossier is een hulpmiddel bij het cliëntonderzoek als bedoeld in de Wwft. Het vervangt niet de wettelijke verplichting van de verantwoordelijke instelling.</p>
+  <p style="margin-top: 12px;">&copy; 2026 Dossier &middot; <a href="mailto:info@dossier.nl">Contact</a></p>
+</footer>
+
+<!-- Checkout Modal -->
+<div class="modal-overlay" id="checkoutModal">
+  <div class="modal">
+    <button class="modal-close" id="modalClose">&times;</button>
+    <h3 id="modalTitle">Bundel kopen</h3>
+    <div class="modal-price" id="modalPrice"></div>
+    <div class="modal-methods">
+      <span>iDEAL</span>
+      <span>Creditcard</span>
+    </div>
+    <div class="modal-error" id="modalError"></div>
+    <label for="checkoutEmail">E-mailadres voor uw activatiecode</label>
+    <input type="email" id="checkoutEmail" placeholder="naam@kantoor.nl" required>
+    <button class="modal-submit" id="modalSubmit">Afrekenen</button>
+  </div>
+</div>
+
+<script>
+(function() {
+  const modal = document.getElementById('checkoutModal');
+  const modalTitle = document.getElementById('modalTitle');
+  const modalPrice = document.getElementById('modalPrice');
+  const modalError = document.getElementById('modalError');
+  const emailInput = document.getElementById('checkoutEmail');
+  const submitBtn = document.getElementById('modalSubmit');
+  let selectedBundel = '';
+
+  // Open modal
+  document.querySelectorAll('.plan-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedBundel = btn.dataset.bundel;
+      modalTitle.textContent = btn.dataset.naam + ' kopen';
+      modalPrice.textContent = btn.dataset.naam + ' — \u20AC' + btn.dataset.prijs + ' ex. btw';
+      modalError.style.display = 'none';
+      emailInput.value = '';
+      modal.classList.add('active');
+    });
+  });
+
+  // Close modal
+  document.getElementById('modalClose').addEventListener('click', () => {
+    modal.classList.remove('active');
+  });
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) modal.classList.remove('active');
+  });
+
+  // Submit checkout
+  submitBtn.addEventListener('click', async () => {
+    const email = emailInput.value.trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      modalError.textContent = 'Vul een geldig e-mailadres in.';
+      modalError.style.display = 'block';
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Bezig...';
+    modalError.style.display = 'none';
+
+    try {
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bundel: selectedBundel, email })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Er ging iets mis.');
+      }
+
+      // Redirect naar Mollie betaalpagina
+      window.location.href = data.checkoutUrl;
+    } catch (err) {
+      modalError.textContent = err.message;
+      modalError.style.display = 'block';
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Afrekenen';
+    }
+  });
+
+  // Enter key support
+  emailInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') submitBtn.click();
+  });
+})();
+</script>
+
+</body>
+</html>
