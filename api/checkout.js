@@ -48,7 +48,7 @@ module.exports = async function handler(req, res) {
       },
       description: bundelInfo.beschrijving,
       redirectUrl: `${getBaseUrl(req)}/betaald`,
-      webhookUrl: `${getBaseUrl(req)}/api/webhook`,
+      webhookUrl: process.env.MOLLIE_WEBHOOK_URL || `${getBaseUrl(req)}/api/webhook`,
       metadata: {
         bundel,
         email,

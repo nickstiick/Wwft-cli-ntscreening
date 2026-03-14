@@ -3,13 +3,18 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { naam } = req.query;
-  if (!naam) {
-    return res.status(400).json({ error: 'Parameter "naam" is verplicht.' });
+  const { naam, kvk } = req.query;
+  if (!naam && !kvk) {
+    return res.status(400).json({ error: 'Parameter "naam" of "kvk" is verplicht.' });
   }
 
   try {
-    const searchUrl = `https://api.kvk.nl/api/v1/zoeken?naam=${encodeURIComponent(naam)}&pagina=1&resultatenPerPagina=5`;
+    let searchUrl;
+    if (kvk) {
+      searchUrl = `https://api.kvk.nl/api/v1/zoeken?kvkNummer=${encodeURIComponent(kvk)}&pagina=1&resultatenPerPagina=3`;
+    } else {
+      searchUrl = `https://api.kvk.nl/api/v1/zoeken?naam=${encodeURIComponent(naam)}&pagina=1&resultatenPerPagina=3`;
+    }
 
     const response = await fetch(searchUrl, {
       headers: {
@@ -25,7 +30,7 @@ module.exports = async function handler(req, res) {
 
     const data = await response.json();
 
-    const resultaten = (data.resultaten || []).slice(0, 5).map(item => ({
+    const resultaten = (data.resultaten || []).slice(0, 3).map(item => ({
       kvkNummer: item.kvkNummer || '',
       naam: item.naam || '',
       type: item.type || '',

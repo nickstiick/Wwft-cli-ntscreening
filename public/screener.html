@@ -508,6 +508,10 @@
         <input type="text" id="locatie" placeholder="Amsterdam">
       </div>
       <div class="form-group">
+        <label for="land">Land</label>
+        <input type="text" id="land" placeholder="Nederland" value="Nederland">
+      </div>
+      <div class="form-group">
         <label for="type">Type subject</label>
         <select id="type">
           <option value="natuurlijk_persoon">Natuurlijk persoon</option>
@@ -736,7 +740,7 @@
         geboortedatum: $('geboortedatum').value || null,
         type: $('type').value,
         locatie: $('locatie').value.trim() || null,
-        tier: isProef ? 'basis' : 'uitgebreid',
+        land: $('land').value.trim() || 'Nederland',
         kvkZoeken: $('kvkZoeken').checked
       };
 
@@ -877,14 +881,33 @@
       html += `</div>`;
     }
 
-    // Sancties
+    // Sancties (met false positive handling)
     html += `<div class="result-section">`;
     html += `<h3>Sanctielijsten <span class="section-count">${r.sancties?.resultaten?.length || 0} hits</span></h3>`;
     if (r.sancties?.resultaten?.length > 0) {
-      r.sancties.resultaten.forEach(s => {
-        html += `<div class="bevinding rood">`;
+      r.sancties.resultaten.forEach((s, idx) => {
+        const sid = `sanctie-${idx}`;
+        html += `<div class="bevinding rood" id="${sid}" data-false-positive="false">`;
         html += `<div class="bevinding-text"><strong>${escapeHtml(s.naam)}</strong> — Score: ${s.score}%</div>`;
         html += `<div class="bevinding-bron">${escapeHtml(s.lijst || '')} ${s.details ? '— ' + escapeHtml(s.details) : ''}</div>`;
+        // Details expand
+        html += `<div style="margin-top:8px;">`;
+        html += `<button onclick="toggleSanctieDetails('${sid}-details')" style="font-size:12px; font-family:sans-serif; background:none; border:1px solid var(--border); padding:4px 10px; border-radius:4px; cursor:pointer; color:var(--navy);">Details bekijken &rarr;</button>`;
+        html += ` <button onclick="markFalsePositive('${sid}')" style="font-size:12px; font-family:sans-serif; background:none; border:1px solid var(--orange); padding:4px 10px; border-radius:4px; cursor:pointer; color:var(--orange);">False positive — dit is niet mijn cli&euml;nt</button>`;
+        html += `</div>`;
+        // Details panel (hidden)
+        html += `<div id="${sid}-details" style="display:none; margin-top:8px; padding:10px; background:rgba(255,255,255,0.6); border-radius:4px; font-size:13px;">`;
+        if (s.naam) html += `<div><strong>Naam:</strong> ${escapeHtml(s.naam)}</div>`;
+        if (s.type) html += `<div><strong>Type:</strong> ${escapeHtml(s.type)}</div>`;
+        if (s.lijst) html += `<div><strong>Lijst:</strong> ${escapeHtml(s.lijst)}</div>`;
+        if (s.score) html += `<div><strong>Match score:</strong> ${s.score}%</div>`;
+        if (s.details) html += `<div><strong>Reden:</strong> ${escapeHtml(s.details)}</div>`;
+        html += `</div>`;
+        // False positive note (hidden)
+        html += `<div id="${sid}-fp" style="display:none; margin-top:8px;">`;
+        html += `<textarea id="${sid}-fp-reden" placeholder="Reden waarom dit een false positive is..." style="width:100%; padding:8px; border:1px solid var(--border); border-radius:4px; font-family:inherit; font-size:13px; resize:vertical; min-height:60px;"></textarea>`;
+        html += `<button onclick="confirmFalsePositive('${sid}')" style="margin-top:6px; font-size:12px; font-family:sans-serif; background:var(--navy); color:#fff; border:none; padding:6px 14px; border-radius:4px; cursor:pointer;">Bevestig false positive</button>`;
+        html += `</div>`;
         html += `</div>`;
       });
     } else {
@@ -1048,6 +1071,42 @@ ${content.innerHTML}
     a.download = `wwft-rapport-${$('naam').value.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().slice(0,10)}.html`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  // ─── SANCTIES FALSE POSITIVE ────────────────
+  window.toggleSanctieDetails = function(id) {
+    const el = document.getElementById(id);
+    if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  };
+
+  window.markFalsePositive = function(sid) {
+    const fpPanel = document.getElementById(sid + '-fp');
+    if (fpPanel) fpPanel.style.display = fpPanel.style.display === 'none' ? 'block' : 'none';
+  };
+
+  window.confirmFalsePositive = function(sid) {
+    const el = document.getElementById(sid);
+    const reden = document.getElementById(sid + '-fp-reden')?.value?.trim() || '';
+    const medewerkerNaam = $('medewerker').value.trim() || 'niet opgegeven';
+    const datum = new Date().toLocaleDateString('nl-NL');
+
+    if (!reden) {
+      alert('Vul een reden in voor de false positive beoordeling.');
+      return;
+    }
+
+    // Markeer visueel als grijs
+    el.className = 'bevinding grijs';
+    el.dataset.falsePositive = 'true';
+
+    // Verberg knoppen, toon bevestiging
+    const fpPanel = document.getElementById(sid + '-fp');
+    fpPanel.innerHTML = `<div style="font-size:12px; font-family:sans-serif; color:var(--grey); font-style:italic; margin-top:4px;">Treffer beoordeeld als false positive door ${escapeHtml(medewerkerNaam)} op ${datum}. Reden: ${escapeHtml(reden)}</div>`;
+    fpPanel.style.display = 'block';
+
+    // Verberg originele knoppen
+    const btns = el.querySelectorAll('button');
+    btns.forEach(b => { if (!b.closest('#' + sid + '-fp')) b.style.display = 'none'; });
   };
 
   // ─── UTIL ─────────────────────────────────

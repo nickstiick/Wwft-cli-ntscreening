@@ -8,13 +8,15 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { naam, geboortedatum, type, locatie, tier, kvkZoeken } = req.body;
+  const { naam, geboortedatum, type, locatie, land, kvkZoeken } = req.body;
 
   if (!naam) {
     return res.status(400).json({ error: 'Naam is verplicht.' });
   }
 
-  const isUitgebreid = tier === 'uitgebreid';
+  // Automatisch internationaal detecteren op basis van land-veld
+  const nlVarianten = ['nederland', 'nl', 'the netherlands', 'netherlands', 'dutch', ''];
+  const isInternationaal = land && !nlVarianten.includes(land.toLowerCase().trim());
   const resultaten = {
     google: [],
     nieuws: [],
@@ -34,10 +36,9 @@ module.exports = async function handler(req, res) {
       `"${naam}" rechtbank OR aanklacht OR strafzaak`
     ];
 
-    if (isUitgebreid) {
-      googleQueries.push(`"${naam}" PEP OR "politiek prominent persoon" OR "politically exposed"`);
-      googleQueries.push(`"${naam}" faillissement OR surseance OR WSNP`);
-    }
+    // Altijd mee: PEP en faillissement queries
+    googleQueries.push(`"${naam}" PEP OR "politiek prominent persoon" OR "politically exposed"`);
+    googleQueries.push(`"${naam}" faillissement OR surseance OR WSNP`);
 
     const googlePromises = googleQueries.map(async (q) => {
       resultaten.queries.push({ type: 'google', query: q, tijdstip: timestamp() });
@@ -56,9 +57,9 @@ module.exports = async function handler(req, res) {
       } catch { return []; }
     })();
 
-    // ─── YANDEX (uitgebreid tier, via Mullvad VPN) ──────
+    // ─── YANDEX (automatisch bij internationale cliënt) ──
     let yandexPromise = Promise.resolve([]);
-    if (isUitgebreid) {
+    if (isInternationaal) {
       const yandexQuery = `"${naam}"`;
       resultaten.queries.push({ type: 'yandex', query: yandexQuery, tijdstip: timestamp() });
       yandexPromise = (async () => {
@@ -134,7 +135,7 @@ module.exports = async function handler(req, res) {
 
     resultaten.google = googleResults.flat();
     resultaten.nieuws = newsResults;
-    if (isUitgebreid) resultaten.yandex = yandexResults;
+    if (isInternationaal) resultaten.yandex = yandexResults;
     resultaten.sancties = sanctiesResult;
     resultaten.rechtspraak = rechtspraakResult;
     resultaten.kvk = kvkResult;

@@ -11,8 +11,8 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: 'Geen activatiecode opgegeven.' });
   }
 
-  // Valideer formaat
-  const codeRegex = /^DOSS-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/;
+  // Valideer formaat (geen O/0/I/1)
+  const codeRegex = /^DOSS-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$/;
   if (!codeRegex.test(code.toUpperCase())) {
     return res.status(400).json({ error: 'Ongeldig codeformaat. Verwacht: DOSS-XXXX-XXXX-XXXX' });
   }

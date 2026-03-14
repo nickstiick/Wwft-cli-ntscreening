@@ -16,6 +16,7 @@
     { "src": "/screener", "dest": "/public/screener.html" },
     { "src": "/betaald", "dest": "/public/betaald.html" },
     { "src": "/privacy-technisch", "dest": "/public/privacy-technisch.html" },
+    { "src": "/privacy", "dest": "/public/privacy-technisch.html" },
     { "src": "/(.*)", "dest": "/public/$1" }
   ]
 }

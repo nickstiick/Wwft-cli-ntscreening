@@ -1,7 +1,7 @@
 const { createMollieClient } = require('@mollie/api-client');
 const { kv } = require('@vercel/kv');
 const { Resend } = require('resend');
-const { v4: uuidv4 } = require('uuid');
+const { generateActivatiecode } = require('./admin');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -23,9 +23,8 @@ module.exports = async function handler(req, res) {
 
     const { bundel, email, rapporten } = payment.metadata;
 
-    // Genereer activatiecode in DOSS-XXXX-XXXX-XXXX formaat
-    const rawUuid = uuidv4().replace(/-/g, '').toUpperCase();
-    const activatiecode = `DOSS-${rawUuid.slice(0, 4)}-${rawUuid.slice(4, 8)}-${rawUuid.slice(8, 12)}`;
+    // Genereer activatiecode (geen O/0/I/1 tekens)
+    const activatiecode = generateActivatiecode();
 
     const geldigTot = new Date();
     geldigTot.setFullYear(geldigTot.getFullYear() + 1);
@@ -66,7 +65,10 @@ module.exports = async function handler(req, res) {
             <strong>${bundelNamen[bundel]}</strong>: ${rapporten} rapporten · geldig tot ${datumFormatted}
           </p>
           <p style="color: #444; line-height: 1.6;">
-            Ga naar <a href="https://dossier.nl/screener" style="color: #1a1a2e;">dossier.nl/screener</a> en voer bovenstaande code in om te starten.
+            Hiermee kunt u ${rapporten} screenings uitvoeren op <a href="https://dossier.nl/screener" style="color: #1a1a2e;">dossier.nl/screener</a>. Voer de code eenmalig in — daarna screent u zonder onderbreking. Credits zijn geldig tot ${datumFormatted}.
+          </p>
+          <p style="color: #444; line-height: 1.6;">
+            Bewaar deze code op een veilige plek.
           </p>
           <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 32px 0;">
           <p style="color: #999; font-size: 13px; line-height: 1.5;">
