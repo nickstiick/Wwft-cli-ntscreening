@@ -15,6 +15,7 @@
     { "source": "/screener", "destination": "/screener.html" },
     { "source": "/betaald", "destination": "/betaald.html" },
     { "source": "/privacy-technisch", "destination": "/privacy-technisch.html" },
-    { "source": "/privacy", "destination": "/privacy-technisch.html" }
+    { "source": "/privacy", "destination": "/privacy-technisch.html" },
+    { "source": "/admin", "destination": "/admin.html" }
   ]
 }
