@@ -585,6 +585,7 @@
   let credits = parseInt(localStorage.getItem('dossier_credits') || '0', 10);
   let proefGebruikt = localStorage.getItem('dossier_proef_gebruikt') === 'true';
   let isProef = false;
+  let lastScreeningData = null; // bewaar voor PDF download
 
   const $ = id => document.getElementById(id);
   const codeInput = $('codeInput');
@@ -809,6 +810,7 @@
 
   // ─── RENDER RESULTS ───────────────────────
   function renderResults(data) {
+    lastScreeningData = data;
     const a = data.analyse || {};
     const r = data.resultaten || {};
     const niveauLabel = { laag: 'Laag risico', verhoogd: 'Verhoogd risico', hoog: 'Hoog risico', grijs: 'Onbekend' };
@@ -998,7 +1000,7 @@
 
     // Download button
     html += `<div style="text-align:center;">`;
-    html += `<button class="download-btn" onclick="downloadReport()">Rapport downloaden (HTML)</button>`;
+    html += `<button class="download-btn" id="downloadPdfBtn" onclick="downloadReport()">Rapport downloaden (PDF)</button>`;
     html += `</div>`;
 
     // After-proef CTA
@@ -1014,63 +1016,87 @@
     resultsPanel.scrollIntoView({ behavior: 'smooth' });
   }
 
-  // ─── DOWNLOAD RAPPORT ─────────────────────
-  window.downloadReport = function() {
-    const content = document.getElementById('reportContent');
-    if (!content) return;
+  // ─── DOWNLOAD RAPPORT (SERVER-SIDE PDF) ──
+  window.downloadReport = async function() {
+    if (!lastScreeningData) return;
 
-    const kantoorKleur = $('kantoorKleur').value;
+    const btn = $('downloadPdfBtn');
+    btn.disabled = true;
+    btn.textContent = 'PDF wordt gegenereerd...';
 
-    const htmlDoc = `<!DOCTYPE html>
-<html lang="nl">
-<head>
-<meta charset="UTF-8">
-<title>Wwft Screening Rapport — ${escapeHtml($('naam').value)}</title>
-<style>
-  body { font-family: Georgia, serif; max-width: 800px; margin: 0 auto; padding: 40px 24px; color: #333; line-height: 1.6; background: #fff; }
-  .risk-banner { padding: 24px; border-radius: 8px; text-align: center; margin-bottom: 24px; border: 2px solid; }
-  .risk-banner.laag { background: #f0faf4; border-color: #27ae60; color: #27ae60; }
-  .risk-banner.verhoogd { background: #fef9ec; border-color: #e67e22; color: #e67e22; }
-  .risk-banner.hoog { background: #fdf0ef; border-color: #c0392b; color: #c0392b; }
-  .risk-banner.grijs { background: #f5f5f5; border-color: #95a5a6; color: #95a5a6; }
-  .risk-niveau { font-size: 12px; text-transform: uppercase; letter-spacing: 2px; font-family: sans-serif; font-weight: bold; }
-  .risk-score { font-size: 42px; font-weight: bold; margin: 4px 0; }
-  .risk-label { font-size: 16px; font-weight: bold; text-transform: uppercase; }
-  .result-section { border: 1px solid #e0ddd5; border-radius: 8px; padding: 20px; margin-bottom: 16px; }
-  .result-section h3 { font-size: 15px; color: #1a1a2e; margin-bottom: 10px; }
-  .section-count { font-size: 11px; background: #f8f7f4; padding: 2px 6px; border-radius: 10px; color: #666; font-family: sans-serif; }
-  .bevinding { padding: 10px 14px; border-left: 4px solid; margin-bottom: 8px; border-radius: 0 8px 8px 0; background: #f8f7f4; }
-  .bevinding.groen { border-color: #27ae60; }
-  .bevinding.oranje { border-color: #e67e22; }
-  .bevinding.rood { border-color: #c0392b; }
-  .bevinding.grijs { border-color: #95a5a6; }
-  .bevinding-text { font-size: 13px; }
-  .bevinding-bron { font-size: 11px; color: #666; margin-top: 3px; font-family: sans-serif; }
-  .samenvatting-text { font-size: 14px; line-height: 1.7; }
-  .bron-item { padding: 8px 0; border-bottom: 1px solid #e0ddd5; font-size: 13px; }
-  .bron-item:last-child { border-bottom: none; }
-  .bron-item a { color: #1a1a2e; }
-  .snippet { color: #666; font-size: 12px; margin-top: 2px; }
-  .query-log { font-family: monospace; font-size: 11px; color: #666; background: #f8f7f4; padding: 10px; border-radius: 8px; }
-  .query-log div { padding: 2px 0; }
-  .disclaimer { background: #f8f7f4; border: 1px solid #e0ddd5; border-radius: 8px; padding: 14px 18px; font-size: 12px; color: #666; margin-top: 20px; line-height: 1.6; }
-  ${isProef ? '.watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%) rotate(-30deg); font-size: 50px; color: rgba(192,57,43,0.08); font-weight: bold; pointer-events: none; }' : ''}
-  @media print { body { padding: 20px; } }
-</style>
-</head>
-<body>
-${isProef ? '<div class="watermark">PROEFSCREENING</div>' : ''}
-${content.innerHTML}
-</body>
-</html>`;
+    // Verzamel sanctie false-positive data van de DOM
+    const sanctieResultaten = (lastScreeningData.resultaten?.sancties?.resultaten || []).map((s, idx) => {
+      const el = document.getElementById(`sanctie-${idx}`);
+      const isFp = el?.dataset?.falsePositive === 'true';
+      const fpPanel = document.getElementById(`sanctie-${idx}-fp`);
+      return {
+        ...s,
+        falsePositive: isFp,
+        fpReden: isFp ? (fpPanel?.querySelector('.fp-note-reden')?.textContent || fpPanel?.textContent || '') : null,
+        fpMedewerker: isFp ? ($('medewerker').value.trim() || 'niet opgegeven') : null,
+        fpDatum: isFp ? new Date().toLocaleDateString('nl-NL') : null
+      };
+    });
 
-    const blob = new Blob([htmlDoc], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `wwft-rapport-${$('naam').value.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().slice(0,10)}.html`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const payload = {
+      rapportData: {
+        naam: lastScreeningData.naam,
+        geboortedatum: lastScreeningData.geboortedatum,
+        locatie: lastScreeningData.locatie,
+        land: $('land').value.trim(),
+        type: lastScreeningData.type,
+        tijdstip: lastScreeningData.tijdstip
+      },
+      whitelabel: {
+        kantoorNaam: $('kantoorNaam').value.trim() || null,
+        medewerker: $('medewerker').value.trim() || null,
+        dossiernummer: $('dossiernummer').value.trim() || null,
+        kleur: $('kantoorKleur').value,
+        logoBase64: null // TODO: convert URL to base64 if needed
+      },
+      analyse: lastScreeningData.analyse,
+      sancties: {
+        resultaten: sanctieResultaten,
+        gecontroleerd: lastScreeningData.resultaten?.sancties?.gecontroleerd
+      },
+      zoekresultaten: {
+        rechtspraak: lastScreeningData.resultaten?.rechtspraak,
+        kvk: lastScreeningData.resultaten?.kvk,
+        google: lastScreeningData.resultaten?.google,
+        nieuws: lastScreeningData.resultaten?.nieuws
+      },
+      queries: lastScreeningData.resultaten?.queries,
+      isProef
+    };
+
+    try {
+      const res = await fetch('/api/rapport', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'PDF generatie mislukt.');
+      }
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      // Haal filename uit Content-Disposition header
+      const disposition = res.headers.get('Content-Disposition') || '';
+      const filenameMatch = disposition.match(/filename="?([^"]+)"?/);
+      a.download = filenameMatch ? filenameMatch[1] : `Wwft-${$('naam').value.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().slice(0,10)}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(err.message || 'PDF downloaden mislukt. Probeer het opnieuw.');
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Rapport downloaden (PDF)';
   };
 
   // ─── SANCTIES FALSE POSITIVE ────────────────
