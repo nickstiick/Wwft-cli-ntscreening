@@ -1,5 +1,7 @@
 {
   "version": 2,
+  "buildCommand": "",
+  "outputDirectory": "public",
   "functions": {
     "api/rapport.js": {
       "memory": 1024,
@@ -10,11 +12,9 @@
     }
   },
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/screener", "destination": "/public/screener.html" },
-    { "source": "/betaald", "destination": "/public/betaald.html" },
-    { "source": "/privacy-technisch", "destination": "/public/privacy-technisch.html" },
-    { "source": "/privacy", "destination": "/public/privacy-technisch.html" },
-    { "source": "/assets/(.*)", "destination": "/public/assets/$1" }
+    { "source": "/screener", "destination": "/screener.html" },
+    { "source": "/betaald", "destination": "/betaald.html" },
+    { "source": "/privacy-technisch", "destination": "/privacy-technisch.html" },
+    { "source": "/privacy", "destination": "/privacy-technisch.html" }
   ]
 }
