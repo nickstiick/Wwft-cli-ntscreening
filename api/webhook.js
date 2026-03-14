@@ -1,5 +1,5 @@
 const { createMollieClient } = require('@mollie/api-client');
-const { kv } = require('@vercel/kv');
+const supabase = require('./_supabase');
 const { Resend } = require('resend');
 const { generateActivatiecode } = require('./admin');
 
@@ -29,18 +29,25 @@ module.exports = async function handler(req, res) {
     const geldigTot = new Date();
     geldigTot.setFullYear(geldigTot.getFullYear() + 1);
 
-    const record = {
-      email,
-      credits_totaal: parseInt(rapporten, 10),
-      credits_gebruikt: 0,
-      bundel,
-      aangemaakt_op: new Date().toISOString(),
-      geldig_tot: geldigTot.toISOString(),
-      mollie_payment_id: id
-    };
+    // Sla op in Supabase
+    const { error: insertError } = await supabase
+      .from('activatiecodes')
+      .insert({
+        code: activatiecode,
+        email,
+        credits_totaal: parseInt(rapporten, 10),
+        credits_gebruikt: 0,
+        bundel,
+        aangemaakt_op: new Date().toISOString(),
+        geldig_tot: geldigTot.toISOString(),
+        mollie_payment_id: id,
+        bron: 'mollie'
+      });
 
-    // Sla op in Vercel KV (365 dagen TTL)
-    await kv.set(activatiecode, JSON.stringify(record), { ex: 365 * 24 * 60 * 60 });
+    if (insertError) {
+      console.error('Supabase insert error:', insertError);
+      return res.status(500).json({ error: 'Fout bij opslaan activatiecode.' });
+    }
 
     // Stuur e-mail met activatiecode
     const resend = new Resend(process.env.RESEND_API_KEY);

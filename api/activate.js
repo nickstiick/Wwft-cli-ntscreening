@@ -1,4 +1,4 @@
-const { kv } = require('@vercel/kv');
+const supabase = require('./_supabase');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -18,12 +18,15 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const raw = await kv.get(code.toUpperCase());
-    if (!raw) {
+    const { data: record, error } = await supabase
+      .from('activatiecodes')
+      .select('*')
+      .eq('code', code.toUpperCase())
+      .single();
+
+    if (error || !record) {
       return res.status(404).json({ error: 'Activatiecode niet gevonden of verlopen.' });
     }
-
-    const record = typeof raw === 'string' ? JSON.parse(raw) : raw;
 
     // Controleer geldigheid
     if (new Date(record.geldig_tot) < new Date()) {
@@ -42,14 +45,19 @@ module.exports = async function handler(req, res) {
         });
       }
 
-      record.credits_gebruikt += 1;
-      await kv.set(code.toUpperCase(), JSON.stringify(record), {
-        ex: Math.max(1, Math.floor((new Date(record.geldig_tot) - new Date()) / 1000))
-      });
+      const { error: updateError } = await supabase
+        .from('activatiecodes')
+        .update({ credits_gebruikt: record.credits_gebruikt + 1 })
+        .eq('code', code.toUpperCase());
+
+      if (updateError) {
+        console.error('Credit update error:', updateError);
+        return res.status(500).json({ error: 'Fout bij het afschrijven van credit.' });
+      }
 
       return res.status(200).json({
         geldig: true,
-        credits_over: record.credits_totaal - record.credits_gebruikt,
+        credits_over: creditsOver - 1,
         credits_totaal: record.credits_totaal,
         bundel: record.bundel,
         geldig_tot: record.geldig_tot

@@ -1,4 +1,4 @@
-const { kv } = require('@vercel/kv');
+const supabase = require('./_supabase');
 
 // Alfabet zonder verwarrende tekens (geen O/0/I/1)
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -39,24 +39,30 @@ module.exports = async function handler(req, res) {
     const geldigTot = new Date();
     geldigTot.setFullYear(geldigTot.getFullYear() + 1);
 
-    const record = {
-      email: email || null,
-      credits_totaal: credits,
-      credits_gebruikt: 0,
-      bundel: 'admin',
-      aangemaakt_op: new Date().toISOString(),
-      geldig_tot: geldigTot.toISOString(),
-      notitie: notitie || null,
-      bron: 'admin'
-    };
+    const { error } = await supabase
+      .from('activatiecodes')
+      .insert({
+        code: activatiecode,
+        email: email || null,
+        credits_totaal: credits,
+        credits_gebruikt: 0,
+        bundel: 'admin',
+        aangemaakt_op: new Date().toISOString(),
+        geldig_tot: geldigTot.toISOString(),
+        notitie: notitie || null,
+        bron: 'admin'
+      });
 
-    await kv.set(activatiecode, JSON.stringify(record), { ex: 365 * 24 * 60 * 60 });
+    if (error) {
+      console.error('Supabase insert error:', error);
+      return res.status(500).json({ error: 'Fout bij het aanmaken van de code.' });
+    }
 
     return res.status(200).json({
       code: activatiecode,
       credits,
-      aangemaakt: record.aangemaakt_op,
-      geldig_tot: record.geldig_tot
+      aangemaakt: new Date().toISOString(),
+      geldig_tot: geldigTot.toISOString()
     });
   } catch (error) {
     console.error('Admin code error:', error);
