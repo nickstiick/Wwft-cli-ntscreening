@@ -31,9 +31,8 @@ module.exports = async function handler(req, res) {
   try {
     // ─── SERPER: GOOGLE SEARCHES (via Mullvad VPN) ──────
     const googleQueries = [
-      `"${naam}" ${locatie || ''}`.trim(),
-      `"${naam}" fraude OR oplichting OR witwassen OR veroordeeld`,
-      `"${naam}" rechtbank OR aanklacht OR strafzaak`
+      `"${naam}" ${locatie ? locatie + ' ' : ''}fraude OR oplichting OR witwassen OR veroordeeld OR verdacht OR crimineel OR strafbaar`,
+      `"${naam}" rechtbank OR aanklacht OR strafzaak OR veroordeling OR OM OR justitie`
     ];
 
     // Altijd mee: PEP en faillissement queries
