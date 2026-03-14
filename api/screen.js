@@ -48,7 +48,9 @@ module.exports = async function handler(req, res) {
     });
 
     // ─── SERPER: NEWS (via Mullvad VPN) ─────────────────
-    const newsQuery = `"${naam}"`;
+    // Gefilterde nieuwsquery: zoek op naam + compliance-gerelateerde termen
+    // om irrelevante berichten (sport, entertainment) te beperken
+    const newsQuery = `"${naam}" fraude OR witwassen OR rechtbank OR veroordeeld OR verdacht OR oplichting OR sanctie OR faillissement OR onderzoek OR politie`;
     resultaten.queries.push({ type: 'nieuws', query: newsQuery, tijdstip: timestamp() });
 
     const newsPromise = (async () => {
@@ -216,7 +218,9 @@ Geef je analyse als JSON met exact deze structuur:
 Belangrijk:
 - Wees feitelijk en objectief
 - Baseer je oordeel alleen op de aangeleverde resultaten
-- Als er geen negatieve resultaten zijn, geef dan risico_niveau "laag"
+- NEGEER berichten die duidelijk NIET relevant zijn voor compliance/Wwft, zoals: sportverslagen, voetbalnieuws, entertainment, roddels, recepten, of berichten waarin de naam slechts terloops wordt genoemd zonder verband met financiële criminaliteit, fraude, witwassen, sancties, of andere Wwft-risico's
+- Neem ALLEEN bevindingen op die daadwerkelijk relevant zijn voor het cliëntonderzoek
+- Als er geen negatieve of relevante resultaten zijn, geef dan risico_niveau "laag"
 - Sanctiehits zijn altijd "rood" ernst
 - Dit is een hulpmiddel, geen definitief oordeel
 - Antwoord ALLEEN met valid JSON, geen andere tekst`
