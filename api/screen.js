@@ -2,13 +2,14 @@
 // Serper (Google + News) via Mullvad VPN, Sanctions.io, Rechtspraak, KvK, and Claude analysis
 
 const { serperGoogle, serperNews } = require('./search');
+const supabase = require('./_supabase');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { naam, geboortedatum, type, locatie, land, kvkZoeken } = req.body;
+  const { naam, geboortedatum, type, locatie, land, kvkZoeken, activatiecode, medewerker, dossiernummer, hercheck, hercheckEmail } = req.body;
 
   if (!naam) {
     return res.status(400).json({ error: 'Naam is verplicht.' });
@@ -144,14 +145,77 @@ module.exports = async function handler(req, res) {
     // ─── CLAUDE ANALYSE ─────────────────────────────────
     const analyse = await analyseMetClaude(naam, geboortedatum, type, locatie, resultaten);
 
+    const tijdstip = new Date().toISOString();
+
+    // Sla screening op in database (async, geen blokkade)
+    const screeningRecord = {
+      naam,
+      geboortedatum: geboortedatum || null,
+      type: type || 'natuurlijk_persoon',
+      locatie: locatie || null,
+      land: land || 'Nederland',
+      risico_niveau: analyse.risico_niveau || null,
+      risico_score: analyse.risico_score >= 0 ? analyse.risico_score : null,
+      samenvatting: analyse.samenvatting || null,
+      resultaten,
+      analyse,
+      bron: req._apiKeyId ? 'api' : 'web',
+      medewerker: medewerker || null,
+      dossiernummer: dossiernummer || null,
+      aangemaakt_op: tijdstip
+    };
+
+    // Koppel aan tenant via activatiecode
+    if (activatiecode) {
+      screeningRecord.activatiecode = activatiecode;
+      const { data: codeRecord } = await supabase
+        .from('activatiecodes')
+        .select('tenant_id')
+        .eq('code', activatiecode.toUpperCase())
+        .single();
+      if (codeRecord?.tenant_id) {
+        screeningRecord.tenant_id = codeRecord.tenant_id;
+      }
+    }
+
+    // API key koppeling
+    if (req._apiKeyId) {
+      screeningRecord.api_key_id = req._apiKeyId;
+      screeningRecord.tenant_id = req._tenantId;
+    }
+
+    // Hercheck instellen
+    if (hercheck) {
+      const hercheckDatum = new Date();
+      hercheckDatum.setMonth(hercheckDatum.getMonth() + (parseInt(hercheck) || 12));
+      screeningRecord.hercheck_datum = hercheckDatum.toISOString().slice(0, 10);
+      screeningRecord.hercheck_actief = true;
+      screeningRecord.hercheck_email = hercheckEmail || null;
+      screeningRecord.hercheck_interval_maanden = parseInt(hercheck) || 12;
+    }
+
+    // Opslaan (fire-and-forget, fout hier mag de response niet blokkeren)
+    let screeningId = null;
+    try {
+      const { data: saved } = await supabase
+        .from('screenings')
+        .insert(screeningRecord)
+        .select('id')
+        .single();
+      screeningId = saved?.id;
+    } catch (saveErr) {
+      console.error('Screening opslaan mislukt:', saveErr);
+    }
+
     return res.status(200).json({
+      id: screeningId,
       naam,
       geboortedatum,
       type,
       locatie,
       resultaten,
       analyse,
-      tijdstip: new Date().toISOString()
+      tijdstip
     });
 
   } catch (error) {

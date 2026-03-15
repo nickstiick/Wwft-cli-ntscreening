@@ -525,6 +525,19 @@
           <input type="checkbox" id="kvkZoeken">
           <label for="kvkZoeken">KvK opzoeken</label>
         </div>
+        <div class="checkbox-group" style="margin-top:6px;">
+          <input type="checkbox" id="hercheckAan">
+          <label for="hercheckAan">Hercheck inplannen</label>
+        </div>
+      </div>
+      <div class="form-group" id="hercheckOpties" style="display:none;">
+        <label for="hercheckInterval">Hercheck interval</label>
+        <select id="hercheckInterval">
+          <option value="12">12 maanden</option>
+          <option value="6">6 maanden</option>
+          <option value="3">3 maanden</option>
+          <option value="24">24 maanden</option>
+        </select>
       </div>
 
       <!-- Whitelabel -->
@@ -573,6 +586,18 @@
 
   <!-- Results -->
   <div class="results-panel" id="resultsPanel"></div>
+
+  <!-- Screening Historie -->
+  <div class="result-section" id="historiePanel" style="display:none; margin-top:24px;">
+    <h3>Screening historie</h3>
+    <div id="historieContent" style="font-size:14px;"></div>
+  </div>
+
+  <!-- Herchecks -->
+  <div class="result-section" id="hercheckPanel" style="display:none; margin-top:16px;">
+    <h3>Geplande herchecks</h3>
+    <div id="hercheckContent" style="font-size:14px;"></div>
+  </div>
 
 </div>
 
@@ -682,6 +707,50 @@
     $('kvkZoeken').checked = true;
   }
 
+  // ─── HERCHECK TOGGLE ─────────────────────
+  $('hercheckAan').addEventListener('change', function() {
+    $('hercheckOpties').style.display = this.checked ? 'block' : 'none';
+  });
+
+  // ─── LAAD SCREENING HISTORIE & HERCHECKS ─────────────────
+  async function laadHistorie() {
+    if (!activatiecode) return;
+
+    try {
+      // Herchecks ophalen
+      const hRes = await fetch('/api/hercheck?code=' + encodeURIComponent(activatiecode));
+      if (hRes.ok) {
+        const hData = await hRes.json();
+        if (hData.herchecks?.length > 0) {
+          const panel = $('hercheckPanel');
+          panel.style.display = 'block';
+          let html = '<table style="width:100%;border-collapse:collapse;font-size:13px;">';
+          html += '<tr style="background:var(--navy);color:#fff;"><th style="padding:6px 10px;text-align:left;">Cliënt</th><th style="padding:6px 10px;text-align:left;">Risico</th><th style="padding:6px 10px;text-align:left;">Hercheck datum</th><th style="padding:6px 10px;text-align:left;">Dossier</th></tr>';
+          hData.herchecks.forEach(h => {
+            const rKleur = h.risico_niveau === 'hoog' ? 'var(--red)' : h.risico_niveau === 'verhoogd' ? 'var(--orange)' : 'var(--green)';
+            const datum = h.hercheck_datum ? new Date(h.hercheck_datum).toLocaleDateString('nl-NL') : '-';
+            const isVerlopen = h.hercheck_datum && new Date(h.hercheck_datum) <= new Date();
+            html += `<tr style="border-bottom:1px solid var(--border);${isVerlopen ? 'background:#fdf0ef;' : ''}">`;
+            html += `<td style="padding:6px 10px;">${h.naam}${h.geboortedatum ? ' (' + h.geboortedatum + ')' : ''}</td>`;
+            html += `<td style="padding:6px 10px;color:${rKleur};font-weight:bold;">${h.risico_niveau || '-'} (${h.risico_score ?? '-'})</td>`;
+            html += `<td style="padding:6px 10px;${isVerlopen ? 'color:var(--red);font-weight:bold;' : ''}">${datum}${isVerlopen ? ' — VERLOPEN' : ''}</td>`;
+            html += `<td style="padding:6px 10px;">${h.dossiernummer || '-'}</td>`;
+            html += '</tr>';
+          });
+          html += '</table>';
+          $('hercheckContent').innerHTML = html;
+        }
+      }
+    } catch (e) {
+      console.error('Historie laden mislukt:', e);
+    }
+  }
+
+  // Laad historie na activatie
+  if (activatiecode) {
+    setTimeout(laadHistorie, 500);
+  }
+
   // ─── SUBMIT SCREENING ─────────────────────
   submitBtn.addEventListener('click', startScreening);
 
@@ -753,8 +822,17 @@
         type: $('type').value,
         locatie: $('locatie').value.trim() || null,
         land: $('land').value.trim() || 'Nederland',
-        kvkZoeken: $('kvkZoeken').checked
+        kvkZoeken: $('kvkZoeken').checked,
+        activatiecode: activatiecode || null,
+        medewerker: $('medewerker')?.value?.trim() || null,
+        dossiernummer: $('dossiernummer')?.value?.trim() || null
       };
+
+      // Hercheck meesturen als aangevinkt
+      if ($('hercheckAan').checked) {
+        body.hercheck = $('hercheckInterval').value;
+        // E-mail ophalen via activatiecode record (al bekend op server)
+      }
 
       const res = await fetch('/api/screen', {
         method: 'POST',
@@ -786,6 +864,9 @@
       }
 
       renderResults(data);
+
+      // Herlaad herchecks na screening
+      laadHistorie();
     } catch (err) {
       console.error(err);
       alert('Er ging iets mis bij de screening. Probeer het opnieuw.');
