@@ -1016,7 +1016,7 @@
     resultsPanel.scrollIntoView({ behavior: 'smooth' });
   }
 
-  // ─── DOWNLOAD RAPPORT (SERVER-SIDE PDF) ──
+  // ─── DOWNLOAD RAPPORT (CLIENT-SIDE PDF via html2pdf.js) ──
   window.downloadReport = async function() {
     if (!lastScreeningData) return;
 
@@ -1024,73 +1024,36 @@
     btn.disabled = true;
     btn.textContent = 'PDF wordt gegenereerd...';
 
-    // Verzamel sanctie false-positive data van de DOM
-    const sanctieResultaten = (lastScreeningData.resultaten?.sancties?.resultaten || []).map((s, idx) => {
-      const el = document.getElementById(`sanctie-${idx}`);
-      const isFp = el?.dataset?.falsePositive === 'true';
-      const fpPanel = document.getElementById(`sanctie-${idx}-fp`);
-      return {
-        ...s,
-        falsePositive: isFp,
-        fpReden: isFp ? (fpPanel?.querySelector('.fp-note-reden')?.textContent || fpPanel?.textContent || '') : null,
-        fpMedewerker: isFp ? ($('medewerker').value.trim() || 'niet opgegeven') : null,
-        fpDatum: isFp ? new Date().toLocaleDateString('nl-NL') : null
-      };
-    });
-
-    const payload = {
-      rapportData: {
-        naam: lastScreeningData.naam,
-        geboortedatum: lastScreeningData.geboortedatum,
-        locatie: lastScreeningData.locatie,
-        land: $('land').value.trim(),
-        type: lastScreeningData.type,
-        tijdstip: lastScreeningData.tijdstip
-      },
-      whitelabel: {
-        kantoorNaam: $('kantoorNaam').value.trim() || null,
-        medewerker: $('medewerker').value.trim() || null,
-        dossiernummer: $('dossiernummer').value.trim() || null,
-        kleur: $('kantoorKleur').value,
-        logoBase64: null // TODO: convert URL to base64 if needed
-      },
-      analyse: lastScreeningData.analyse,
-      sancties: {
-        resultaten: sanctieResultaten,
-        gecontroleerd: lastScreeningData.resultaten?.sancties?.gecontroleerd
-      },
-      zoekresultaten: {
-        rechtspraak: lastScreeningData.resultaten?.rechtspraak,
-        kvk: lastScreeningData.resultaten?.kvk,
-        google: lastScreeningData.resultaten?.google,
-        nieuws: lastScreeningData.resultaten?.nieuws
-      },
-      queries: lastScreeningData.resultaten?.queries,
-      isProef
-    };
-
     try {
-      const res = await fetch('/api/rapport', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || 'PDF generatie mislukt.');
+      // Laad html2pdf.js dynamisch als het nog niet geladen is
+      if (!window.html2pdf) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js';
+          script.onload = resolve;
+          script.onerror = () => reject(new Error('html2pdf.js kon niet worden geladen.'));
+          document.head.appendChild(script);
+        });
       }
 
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      // Haal filename uit Content-Disposition header
-      const disposition = res.headers.get('Content-Disposition') || '';
-      const filenameMatch = disposition.match(/filename="?([^"]+)"?/);
-      a.download = filenameMatch ? filenameMatch[1] : `Wwft-${$('naam').value.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().slice(0,10)}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
+      // Bouw een schone print-versie van het rapport
+      const printEl = document.createElement('div');
+      printEl.innerHTML = buildPrintHtml();
+      document.body.appendChild(printEl);
+
+      const naamClean = lastScreeningData.naam.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9\-]/g, '').toLowerCase();
+      const datum = new Date().toISOString().slice(0, 10);
+
+      await html2pdf().set({
+        margin: [15, 15, 20, 15],
+        filename: `Wwft-${naamClean}-${datum}.pdf`,
+        image: { type: 'jpeg', quality: 0.95 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+      }).from(printEl).save();
+
+      document.body.removeChild(printEl);
     } catch (err) {
       alert(err.message || 'PDF downloaden mislukt. Probeer het opnieuw.');
     }
@@ -1098,6 +1061,174 @@
     btn.disabled = false;
     btn.textContent = 'Rapport downloaden (PDF)';
   };
+
+  // Bouw een opgeschoonde HTML speciaal voor PDF-export
+  function buildPrintHtml() {
+    const d = lastScreeningData;
+    const a = d.analyse || {};
+    const kleur = $('kantoorKleur')?.value || '#1a1a2e';
+    const kantoor = $('kantoorNaam')?.value?.trim() || '';
+    const medewerker = $('medewerker')?.value?.trim() || '';
+    const dossiernummer = $('dossiernummer')?.value?.trim() || '';
+    const niveauLabel = { laag: 'Laag risico', verhoogd: 'Verhoogd risico', hoog: 'Hoog risico', grijs: 'Onbekend' };
+    const niveauKleur = { laag: '#27ae60', verhoogd: '#e67e22', hoog: '#c0392b', grijs: '#95a5a6' };
+    const niveau = a.risico_niveau || 'grijs';
+    const rKleur = niveauKleur[niveau] || '#95a5a6';
+    const tijdstip = d.tijdstip ? new Date(d.tijdstip).toLocaleString('nl-NL') : new Date().toLocaleString('nl-NL');
+
+    let h = `<div style="font-family: Georgia, 'Times New Roman', serif; color: #333; line-height: 1.6; font-size: 11pt;">`;
+
+    // Watermark
+    if (isProef) {
+      h += `<div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-30deg);font-size:48pt;color:rgba(192,57,43,0.06);font-weight:700;pointer-events:none;z-index:-1;">PROEFSCREENING</div>`;
+    }
+
+    // Header
+    if (kantoor) {
+      h += `<div style="text-align:center;margin-bottom:28px;padding-bottom:16px;border-bottom:3px solid ${kleur};">`;
+      h += `<div style="font-size:16pt;font-weight:700;color:${kleur};">${escapeHtml(kantoor)}</div>`;
+      h += `</div>`;
+    }
+
+    // Meta
+    h += `<div style="text-align:center;font-size:9pt;color:#666;margin-bottom:24px;line-height:1.8;">`;
+    h += `<strong style="color:#333;">Wwft Cliëntscreening</strong> — ${escapeHtml(tijdstip)}`;
+    if (medewerker) h += `<br>Medewerker: ${escapeHtml(medewerker)}`;
+    if (dossiernummer) h += `<br>Dossiernummer: ${escapeHtml(dossiernummer)}`;
+    h += `<br>Subject: <strong style="color:#333;">${escapeHtml(d.naam)}</strong>`;
+    if (d.geboortedatum) h += ` (${escapeHtml(d.geboortedatum)})`;
+    if (d.locatie) h += ` — ${escapeHtml(d.locatie)}`;
+    h += `</div>`;
+
+    // Risk stamp
+    const bgKleur = niveau === 'laag' ? '#f0faf4' : niveau === 'verhoogd' ? '#fef9ec' : niveau === 'hoog' ? '#fdf0ef' : '#f5f5f5';
+    h += `<div style="text-align:center;padding:20px;border:3px solid ${rKleur};border-radius:8px;margin-bottom:24px;background:${bgKleur};color:${rKleur};">`;
+    h += `<div style="font-size:9pt;text-transform:uppercase;letter-spacing:3px;font-weight:700;font-family:sans-serif;">Risicobeoordeling</div>`;
+    if (a.risico_score >= 0) h += `<div style="font-size:36pt;font-weight:700;margin:2px 0;">${a.risico_score}</div>`;
+    h += `<div style="font-size:14pt;font-weight:700;text-transform:uppercase;">${niveauLabel[niveau] || 'Onbekend'}</div>`;
+    h += `</div>`;
+
+    // Samenvatting
+    if (a.samenvatting) {
+      h += `<div style="margin-bottom:20px;">`;
+      h += `<div style="font-size:13pt;font-weight:700;color:${kleur};margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #e0ddd5;">Samenvatting</div>`;
+      h += `<div>${escapeHtml(a.samenvatting)}</div>`;
+      if (a.wwft_oordeel) {
+        h += `<div style="background:#f8f7f4;padding:10px 14px;border-radius:6px;margin-top:10px;font-size:10pt;"><strong style="color:${kleur};">Wwft-oordeel:</strong> ${escapeHtml(a.wwft_oordeel)}</div>`;
+      }
+      h += `</div>`;
+    }
+
+    // Bevindingen
+    if (a.bevindingen?.length > 0) {
+      h += `<div style="margin-bottom:20px;">`;
+      h += `<div style="font-size:13pt;font-weight:700;color:${kleur};margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #e0ddd5;">Risico-indicatoren <span style="font-size:8pt;background:#f8f7f4;padding:1px 6px;border-radius:8px;color:#666;font-family:sans-serif;">${a.bevindingen.length}</span></div>`;
+      const ernstKleur = { groen: '#27ae60', oranje: '#e67e22', rood: '#c0392b', grijs: '#95a5a6' };
+      a.bevindingen.forEach(b => {
+        const bk = ernstKleur[b.ernst] || '#95a5a6';
+        h += `<div style="padding:8px 12px;border-left:4px solid ${bk};margin-bottom:8px;border-radius:0 6px 6px 0;background:#f8f7f4;font-size:10pt;">`;
+        h += escapeHtml(b.beschrijving);
+        h += `<div style="font-size:8pt;color:#666;margin-top:2px;font-family:sans-serif;">${escapeHtml(b.categorie || '')} ${b.bron ? '— ' + escapeHtml(b.bron) : ''}</div>`;
+        h += `</div>`;
+      });
+      h += `</div>`;
+    }
+
+    // Risico-uitleg
+    if (a.risico_uitleg) {
+      h += `<div style="margin-bottom:20px;">`;
+      h += `<div style="font-size:13pt;font-weight:700;color:${kleur};margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #e0ddd5;">Toelichting risicobeoordeling</div>`;
+      h += `<div>${escapeHtml(a.risico_uitleg)}</div>`;
+      h += `</div>`;
+    }
+
+    // Sancties
+    const sanctieList = d.resultaten?.sancties?.resultaten || [];
+    h += `<div style="margin-bottom:20px;">`;
+    h += `<div style="font-size:13pt;font-weight:700;color:${kleur};margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #e0ddd5;">Sanctielijsten <span style="font-size:8pt;background:#f8f7f4;padding:1px 6px;border-radius:8px;color:#666;font-family:sans-serif;">${sanctieList.length} hits</span></div>`;
+    if (sanctieList.length > 0) {
+      h += `<table style="width:100%;border-collapse:collapse;font-size:9pt;margin-bottom:12px;">`;
+      h += `<thead><tr><th style="background:${kleur};color:#fff;text-align:left;padding:6px 10px;font-size:8pt;text-transform:uppercase;">Naam</th><th style="background:${kleur};color:#fff;text-align:left;padding:6px 10px;font-size:8pt;text-transform:uppercase;">Lijst</th><th style="background:${kleur};color:#fff;text-align:left;padding:6px 10px;font-size:8pt;text-transform:uppercase;">Score</th></tr></thead><tbody>`;
+      sanctieList.forEach(s => {
+        h += `<tr><td style="padding:6px 10px;border-bottom:1px solid #e0ddd5;">${escapeHtml(s.naam)}</td>`;
+        h += `<td style="padding:6px 10px;border-bottom:1px solid #e0ddd5;">${escapeHtml(s.lijst || '')}</td>`;
+        h += `<td style="padding:6px 10px;border-bottom:1px solid #e0ddd5;">${s.score}%</td></tr>`;
+      });
+      h += `</tbody></table>`;
+    } else {
+      h += `<div style="padding:8px 12px;border-left:4px solid #27ae60;border-radius:0 6px 6px 0;background:#f8f7f4;font-size:10pt;">Geen matches gevonden op EU, OFAC of VN sanctielijsten.</div>`;
+    }
+    h += `</div>`;
+
+    // Rechtspraak
+    const rsList = d.resultaten?.rechtspraak?.resultaten || [];
+    h += `<div style="margin-bottom:20px;">`;
+    h += `<div style="font-size:13pt;font-weight:700;color:${kleur};margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #e0ddd5;">Rechtspraak.nl <span style="font-size:8pt;background:#f8f7f4;padding:1px 6px;border-radius:8px;color:#666;font-family:sans-serif;">${rsList.length}</span></div>`;
+    if (rsList.length > 0) {
+      rsList.forEach(r => {
+        h += `<div style="padding:6px 0;border-bottom:1px solid #eee;font-size:10pt;">`;
+        h += `<strong>${escapeHtml(r.titel || r.ecli || 'Uitspraak')}</strong>`;
+        h += `<div style="color:#666;font-size:9pt;">${escapeHtml(r.instantie || '')} ${r.datum ? '— ' + r.datum : ''}</div>`;
+        if (r.samenvatting) h += `<div style="color:#666;font-size:9pt;">${escapeHtml(r.samenvatting)}</div>`;
+        h += `</div>`;
+      });
+    } else {
+      h += `<div style="padding:8px 12px;border-left:4px solid #27ae60;border-radius:0 6px 6px 0;background:#f8f7f4;font-size:10pt;">Geen uitspraken gevonden.</div>`;
+    }
+    h += `</div>`;
+
+    // Webresultaten
+    const googleList = d.resultaten?.google || [];
+    if (googleList.length > 0) {
+      h += `<div style="margin-bottom:20px;">`;
+      h += `<div style="font-size:13pt;font-weight:700;color:${kleur};margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #e0ddd5;">Webresultaten <span style="font-size:8pt;background:#f8f7f4;padding:1px 6px;border-radius:8px;color:#666;font-family:sans-serif;">${googleList.length}</span></div>`;
+      googleList.slice(0, 15).forEach(g => {
+        h += `<div style="padding:6px 0;border-bottom:1px solid #eee;font-size:10pt;">`;
+        h += `<strong style="color:${kleur};">${escapeHtml(g.titel)}</strong>`;
+        if (g.snippet) h += `<div style="color:#666;font-size:9pt;">${escapeHtml(g.snippet)}</div>`;
+        h += `</div>`;
+      });
+      h += `</div>`;
+    }
+
+    // Nieuws
+    const nieuwsList = d.resultaten?.nieuws || [];
+    if (nieuwsList.length > 0) {
+      h += `<div style="margin-bottom:20px;">`;
+      h += `<div style="font-size:13pt;font-weight:700;color:${kleur};margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #e0ddd5;">Nieuwsberichten <span style="font-size:8pt;background:#f8f7f4;padding:1px 6px;border-radius:8px;color:#666;font-family:sans-serif;">${nieuwsList.length}</span></div>`;
+      nieuwsList.forEach(n => {
+        h += `<div style="padding:6px 0;border-bottom:1px solid #eee;font-size:10pt;">`;
+        h += `<strong style="color:${kleur};">${escapeHtml(n.titel)}</strong>`;
+        if (n.bron || n.datum) h += `<div style="color:#666;font-size:9pt;">${escapeHtml(n.bron || '')} ${n.datum ? '— ' + n.datum : ''}</div>`;
+        if (n.snippet) h += `<div style="color:#666;font-size:9pt;">${escapeHtml(n.snippet)}</div>`;
+        h += `</div>`;
+      });
+      h += `</div>`;
+    }
+
+    // Query log
+    const queries = d.resultaten?.queries || [];
+    if (queries.length > 0) {
+      h += `<div style="margin-bottom:20px;">`;
+      h += `<div style="font-size:13pt;font-weight:700;color:${kleur};margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #e0ddd5;">Uitgevoerde zoekopdrachten</div>`;
+      h += `<div style="font-family:'Courier New',monospace;font-size:8pt;color:#888;background:#f8f7f4;padding:8px 10px;border-radius:6px;line-height:1.5;">`;
+      queries.forEach(q => {
+        h += `[${(q.tijdstip || '').slice(11, 19)}] ${escapeHtml(q.type)}: ${escapeHtml(q.query)}<br>`;
+      });
+      h += `</div></div>`;
+    }
+
+    // Disclaimer
+    h += `<div style="background:#f8f7f4;border:1px solid #e0ddd5;border-radius:6px;padding:12px 14px;font-size:9pt;color:#666;margin-top:24px;line-height:1.5;">`;
+    h += `<strong>Disclaimer:</strong> Dit rapport is een hulpmiddel bij de uitvoering van het cliëntonderzoek als bedoeld in de Wwft. Het vervangt niet de wettelijke verplichting van de verantwoordelijke instelling. De verantwoordelijke instelling blijft te allen tijde zelf verantwoordelijk voor de naleving van de Wwft en de beoordeling van de risico's.`;
+    if (isProef) {
+      h += `<br><br><strong style="color:#c0392b;">PROEFSCREENING — Dit rapport is niet geldig als officieel Wwft-dossier.</strong>`;
+    }
+    h += `</div>`;
+
+    h += `</div>`;
+    return h;
+  }
 
   // ─── SANCTIES FALSE POSITIVE ────────────────
   window.toggleSanctieDetails = function(id) {
