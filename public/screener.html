@@ -671,6 +671,17 @@
     }
   }
 
+  // ─── AUTO KVK BIJ RECHTSPERSOON/UBO ─────────────────────
+  $('type').addEventListener('change', function() {
+    if (this.value === 'rechtspersoon' || this.value === 'ubo') {
+      $('kvkZoeken').checked = true;
+    }
+  });
+  // Check bij pagina-load
+  if ($('type').value === 'rechtspersoon' || $('type').value === 'ubo') {
+    $('kvkZoeken').checked = true;
+  }
+
   // ─── SUBMIT SCREENING ─────────────────────
   submitBtn.addEventListener('click', startScreening);
 
@@ -1016,7 +1027,7 @@
     resultsPanel.scrollIntoView({ behavior: 'smooth' });
   }
 
-  // ─── DOWNLOAD RAPPORT (CLIENT-SIDE PDF via jsPDF + html) ──
+  // ─── DOWNLOAD RAPPORT (CLIENT-SIDE PDF via native jsPDF met klikbare links) ──
   window.downloadReport = async function() {
     if (!lastScreeningData) return;
 
@@ -1025,60 +1036,14 @@
     btn.textContent = 'PDF wordt gegenereerd...';
 
     try {
-      // Laad jspdf en html2canvas dynamisch
+      // Laad jspdf dynamisch (html2canvas niet meer nodig)
       if (!window.jspdf) {
-        await Promise.all([
-          loadScript('https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js'),
-          loadScript('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js')
-        ]);
+        await loadScript('https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js');
       }
-
-      // Maak een iframe zodat we een schone render-context hebben
-      const iframe = document.createElement('iframe');
-      iframe.style.cssText = 'position:fixed;left:0;top:0;width:794px;height:1123px;border:none;z-index:99999;background:#fff;';
-      document.body.appendChild(iframe);
-
-      const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-      iframeDoc.open();
-      iframeDoc.write(`<!DOCTYPE html><html><head><style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: Georgia, 'Times New Roman', serif; color: #333; line-height: 1.6; font-size: 11pt; background: #fff; padding: 40px; width: 794px; }
-      </style></head><body>${buildPrintHtml()}</body></html>`);
-      iframeDoc.close();
-
-      // Wacht tot iframe volledig gerenderd is
-      await new Promise(r => setTimeout(r, 500));
-
-      const canvas = await html2canvas(iframeDoc.body, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        width: 794,
-        windowWidth: 794
-      });
-
-      document.body.removeChild(iframe);
 
       const { jsPDF } = window.jspdf;
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const pageWidth = 210;
-      const pageHeight = 297;
-      const imgWidth = pageWidth;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
-
-      let heightLeft = imgHeight;
-      let position = 0;
-
-      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-
-      while (heightLeft > 0) {
-        position -= pageHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
+      buildNativePdf(pdf);
 
       const naamClean = lastScreeningData.naam.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9\-]/g, '').toLowerCase();
       const datum = new Date().toISOString().slice(0, 10);
@@ -1103,8 +1068,8 @@
     });
   }
 
-  // Bouw een opgeschoonde HTML speciaal voor PDF-export
-  function buildPrintHtml() {
+  // ─── Native jsPDF rendering met klikbare links ──
+  function buildNativePdf(pdf) {
     const d = lastScreeningData;
     const a = d.analyse || {};
     const kleur = $('kantoorKleur')?.value || '#1a1a2e';
@@ -1112,163 +1077,427 @@
     const medewerker = $('medewerker')?.value?.trim() || '';
     const dossiernummer = $('dossiernummer')?.value?.trim() || '';
     const niveauLabel = { laag: 'Laag risico', verhoogd: 'Verhoogd risico', hoog: 'Hoog risico', grijs: 'Onbekend' };
-    const niveauKleur = { laag: '#27ae60', verhoogd: '#e67e22', hoog: '#c0392b', grijs: '#95a5a6' };
+    const niveauKleur = { laag: [39, 174, 96], verhoogd: [230, 126, 34], hoog: [192, 57, 43], grijs: [149, 165, 166] };
     const niveau = a.risico_niveau || 'grijs';
-    const rKleur = niveauKleur[niveau] || '#95a5a6';
+    const rKleur = niveauKleur[niveau] || [149, 165, 166];
     const tijdstip = d.tijdstip ? new Date(d.tijdstip).toLocaleString('nl-NL') : new Date().toLocaleString('nl-NL');
 
-    let h = `<div style="font-family: Georgia, 'Times New Roman', serif; color: #333; line-height: 1.6; font-size: 11pt;">`;
+    const pageW = 210;
+    const pageH = 297;
+    const marginL = 20;
+    const marginR = 20;
+    const contentW = pageW - marginL - marginR;
+    let y = 20;
 
-    // Watermark
-    if (isProef) {
-      h += `<div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-30deg);font-size:48pt;color:rgba(192,57,43,0.06);font-weight:700;pointer-events:none;z-index:-1;">PROEFSCREENING</div>`;
+    // Helper: hex kleur naar RGB array
+    function hexToRgb(hex) {
+      hex = hex.replace('#', '');
+      return [parseInt(hex.substring(0,2),16), parseInt(hex.substring(2,4),16), parseInt(hex.substring(4,6),16)];
     }
+    const kleurRgb = hexToRgb(kleur);
 
-    // Header
-    if (kantoor) {
-      h += `<div style="text-align:center;margin-bottom:28px;padding-bottom:16px;border-bottom:3px solid ${kleur};">`;
-      h += `<div style="font-size:16pt;font-weight:700;color:${kleur};">${escapeHtml(kantoor)}</div>`;
-      h += `</div>`;
-    }
-
-    // Meta
-    h += `<div style="text-align:center;font-size:9pt;color:#666;margin-bottom:24px;line-height:1.8;">`;
-    h += `<strong style="color:#333;">Wwft Cliëntscreening</strong> — ${escapeHtml(tijdstip)}`;
-    if (medewerker) h += `<br>Medewerker: ${escapeHtml(medewerker)}`;
-    if (dossiernummer) h += `<br>Dossiernummer: ${escapeHtml(dossiernummer)}`;
-    h += `<br>Subject: <strong style="color:#333;">${escapeHtml(d.naam)}</strong>`;
-    if (d.geboortedatum) h += ` (${escapeHtml(d.geboortedatum)})`;
-    if (d.locatie) h += ` — ${escapeHtml(d.locatie)}`;
-    h += `</div>`;
-
-    // Risk stamp
-    const bgKleur = niveau === 'laag' ? '#f0faf4' : niveau === 'verhoogd' ? '#fef9ec' : niveau === 'hoog' ? '#fdf0ef' : '#f5f5f5';
-    h += `<div style="text-align:center;padding:20px;border:3px solid ${rKleur};border-radius:8px;margin-bottom:24px;background:${bgKleur};color:${rKleur};">`;
-    h += `<div style="font-size:9pt;text-transform:uppercase;letter-spacing:3px;font-weight:700;font-family:sans-serif;">Risicobeoordeling</div>`;
-    if (a.risico_score >= 0) h += `<div style="font-size:36pt;font-weight:700;margin:2px 0;">${a.risico_score}</div>`;
-    h += `<div style="font-size:14pt;font-weight:700;text-transform:uppercase;">${niveauLabel[niveau] || 'Onbekend'}</div>`;
-    h += `</div>`;
-
-    // Samenvatting
-    if (a.samenvatting) {
-      h += `<div style="margin-bottom:20px;">`;
-      h += `<div style="font-size:13pt;font-weight:700;color:${kleur};margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #e0ddd5;">Samenvatting</div>`;
-      h += `<div>${escapeHtml(a.samenvatting)}</div>`;
-      if (a.wwft_oordeel) {
-        h += `<div style="background:#f8f7f4;padding:10px 14px;border-radius:6px;margin-top:10px;font-size:10pt;"><strong style="color:${kleur};">Wwft-oordeel:</strong> ${escapeHtml(a.wwft_oordeel)}</div>`;
+    // Helper: check pagina-einde en voeg nieuwe pagina toe
+    function checkPage(needed) {
+      if (y + needed > pageH - 20) {
+        pdf.addPage();
+        y = 20;
+        return true;
       }
-      h += `</div>`;
+      return false;
     }
 
-    // Bevindingen
+    // Helper: wrapped text schrijven
+    function writeText(text, x, fontSize, color, options) {
+      pdf.setFontSize(fontSize);
+      pdf.setTextColor(...color);
+      const style = options?.bold ? 'bold' : 'normal';
+      pdf.setFont('helvetica', style);
+      const lines = pdf.splitTextToSize(text || '', contentW - (x - marginL));
+      lines.forEach(line => {
+        checkPage(fontSize * 0.4);
+        pdf.text(line, x, y);
+        y += fontSize * 0.45;
+      });
+    }
+
+    // Helper: klikbare link schrijven
+    function writeLink(text, url, x, fontSize) {
+      pdf.setFontSize(fontSize);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(0, 102, 204);
+      const maxW = contentW - (x - marginL);
+      const lines = pdf.splitTextToSize(text || url, maxW);
+      lines.forEach((line, i) => {
+        checkPage(fontSize * 0.4);
+        const tw = pdf.getTextWidth(line);
+        if (i === 0) {
+          pdf.textWithLink(line, x, y, { url: url });
+        } else {
+          pdf.text(line, x, y);
+        }
+        // Onderstreep de link
+        pdf.setDrawColor(0, 102, 204);
+        pdf.setLineWidth(0.2);
+        pdf.line(x, y + 0.5, x + tw, y + 0.5);
+        y += fontSize * 0.45;
+      });
+    }
+
+    // Helper: sectie-titel
+    function sectionTitle(title, count) {
+      checkPage(12);
+      y += 4;
+      pdf.setFontSize(13);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(...kleurRgb);
+      let label = title;
+      if (count !== undefined) label += ` (${count})`;
+      pdf.text(label, marginL, y);
+      y += 2;
+      pdf.setDrawColor(224, 221, 213);
+      pdf.setLineWidth(0.3);
+      pdf.line(marginL, y, pageW - marginR, y);
+      y += 5;
+    }
+
+    // Helper: gekleurde balk links
+    function colorBar(text, colorRgb) {
+      checkPage(10);
+      pdf.setFillColor(...colorRgb);
+      pdf.rect(marginL, y - 3.5, 1.5, 6, 'F');
+      pdf.setFillColor(248, 247, 244);
+      pdf.rect(marginL + 1.5, y - 3.5, contentW - 1.5, 6, 'F');
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(51, 51, 51);
+      const lines = pdf.splitTextToSize(text, contentW - 6);
+      const lineH = 4;
+      // Herteken achtergrond voor meerdere regels
+      if (lines.length > 1) {
+        pdf.setFillColor(248, 247, 244);
+        pdf.rect(marginL + 1.5, y - 3.5, contentW - 1.5, lines.length * lineH + 2, 'F');
+        pdf.setFillColor(...colorRgb);
+        pdf.rect(marginL, y - 3.5, 1.5, lines.length * lineH + 2, 'F');
+      }
+      pdf.setTextColor(51, 51, 51);
+      lines.forEach(line => {
+        pdf.text(line, marginL + 4, y);
+        y += lineH;
+      });
+      y += 2;
+    }
+
+    // ═══ PROEFSCREENING watermark ═══
+    if (isProef) {
+      pdf.setFontSize(50);
+      pdf.setTextColor(192, 57, 43);
+      pdf.setGState(new pdf.GState({ opacity: 0.06 }));
+      pdf.text('PROEFSCREENING', pageW / 2, pageH / 2, { align: 'center', angle: 30 });
+      pdf.setGState(new pdf.GState({ opacity: 1 }));
+    }
+
+    // ═══ HEADER ═══
+    if (kantoor) {
+      pdf.setFontSize(18);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(...kleurRgb);
+      pdf.text(kantoor, pageW / 2, y, { align: 'center' });
+      y += 6;
+      pdf.setDrawColor(...kleurRgb);
+      pdf.setLineWidth(1);
+      pdf.line(marginL, y, pageW - marginR, y);
+      y += 10;
+    }
+
+    // ═══ META ═══
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(51, 51, 51);
+    pdf.text('Wwft Cli\u00ebntscreening', pageW / 2, y, { align: 'center' });
+    y += 4;
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(102, 102, 102);
+    pdf.text(tijdstip, pageW / 2, y, { align: 'center' });
+    y += 4;
+    if (medewerker) { pdf.text('Medewerker: ' + medewerker, pageW / 2, y, { align: 'center' }); y += 4; }
+    if (dossiernummer) { pdf.text('Dossiernummer: ' + dossiernummer, pageW / 2, y, { align: 'center' }); y += 4; }
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(51, 51, 51);
+    let subjectLine = 'Subject: ' + d.naam;
+    if (d.geboortedatum) subjectLine += ' (' + d.geboortedatum + ')';
+    if (d.locatie) subjectLine += ' \u2014 ' + d.locatie;
+    pdf.text(subjectLine, pageW / 2, y, { align: 'center' });
+    y += 8;
+
+    // ═══ RISICOBEOORDELING BOX ═══
+    checkPage(35);
+    const boxH = 32;
+    const bgKleur = niveau === 'laag' ? [240, 250, 244] : niveau === 'verhoogd' ? [254, 249, 236] : niveau === 'hoog' ? [253, 240, 239] : [245, 245, 245];
+    pdf.setFillColor(...bgKleur);
+    pdf.setDrawColor(...rKleur);
+    pdf.setLineWidth(1);
+    pdf.roundedRect(marginL, y, contentW, boxH, 3, 3, 'FD');
+    // Label
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(...rKleur);
+    pdf.text('RISICOBEOORDELING', pageW / 2, y + 7, { align: 'center' });
+    // Score
+    if (a.risico_score >= 0) {
+      pdf.setFontSize(28);
+      pdf.text(String(a.risico_score), pageW / 2, y + 18, { align: 'center' });
+    }
+    // Niveau
+    pdf.setFontSize(12);
+    pdf.text((niveauLabel[niveau] || 'Onbekend').toUpperCase(), pageW / 2, y + 26, { align: 'center' });
+    y += boxH + 8;
+
+    // ═══ SAMENVATTING ═══
+    if (a.samenvatting) {
+      sectionTitle('Samenvatting');
+      writeText(a.samenvatting, marginL, 10, [51, 51, 51]);
+      if (a.wwft_oordeel) {
+        y += 2;
+        checkPage(10);
+        pdf.setFillColor(248, 247, 244);
+        pdf.rect(marginL, y - 3, contentW, 8, 'F');
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(...kleurRgb);
+        pdf.text('Wwft-oordeel: ', marginL + 3, y);
+        const labelW = pdf.getTextWidth('Wwft-oordeel: ');
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(51, 51, 51);
+        const oordeelLines = pdf.splitTextToSize(a.wwft_oordeel, contentW - 6 - labelW);
+        pdf.text(oordeelLines[0], marginL + 3 + labelW, y);
+        y += 4;
+        for (let i = 1; i < oordeelLines.length; i++) {
+          pdf.text(oordeelLines[i], marginL + 3, y);
+          y += 4;
+        }
+        y += 3;
+      }
+    }
+
+    // ═══ BEVINDINGEN ═══
     if (a.bevindingen?.length > 0) {
-      h += `<div style="margin-bottom:20px;">`;
-      h += `<div style="font-size:13pt;font-weight:700;color:${kleur};margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #e0ddd5;">Risico-indicatoren <span style="font-size:8pt;background:#f8f7f4;padding:1px 6px;border-radius:8px;color:#666;font-family:sans-serif;">${a.bevindingen.length}</span></div>`;
-      const ernstKleur = { groen: '#27ae60', oranje: '#e67e22', rood: '#c0392b', grijs: '#95a5a6' };
+      sectionTitle('Risico-indicatoren', a.bevindingen.length);
+      const ernstRgb = { groen: [39,174,96], oranje: [230,126,34], rood: [192,57,43], grijs: [149,165,166] };
       a.bevindingen.forEach(b => {
-        const bk = ernstKleur[b.ernst] || '#95a5a6';
-        h += `<div style="padding:8px 12px;border-left:4px solid ${bk};margin-bottom:8px;border-radius:0 6px 6px 0;background:#f8f7f4;font-size:10pt;">`;
-        h += escapeHtml(b.beschrijving);
-        h += `<div style="font-size:8pt;color:#666;margin-top:2px;font-family:sans-serif;">${escapeHtml(b.categorie || '')} ${b.bron ? '— ' + escapeHtml(b.bron) : ''}</div>`;
-        h += `</div>`;
+        const bk = ernstRgb[b.ernst] || [149,165,166];
+        colorBar(b.beschrijving, bk);
+        if (b.categorie || b.bron) {
+          y -= 1;
+          pdf.setFontSize(7);
+          pdf.setTextColor(150, 150, 150);
+          pdf.text((b.categorie || '') + (b.bron ? ' \u2014 ' + b.bron : ''), marginL + 4, y);
+          y += 4;
+        }
       });
-      h += `</div>`;
     }
 
-    // Risico-uitleg
+    // ═══ RISICO-UITLEG ═══
     if (a.risico_uitleg) {
-      h += `<div style="margin-bottom:20px;">`;
-      h += `<div style="font-size:13pt;font-weight:700;color:${kleur};margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #e0ddd5;">Toelichting risicobeoordeling</div>`;
-      h += `<div>${escapeHtml(a.risico_uitleg)}</div>`;
-      h += `</div>`;
+      sectionTitle('Toelichting risicobeoordeling');
+      writeText(a.risico_uitleg, marginL, 10, [51, 51, 51]);
     }
 
-    // Sancties
+    // ═══ SANCTIELIJSTEN ═══
     const sanctieList = d.resultaten?.sancties?.resultaten || [];
-    h += `<div style="margin-bottom:20px;">`;
-    h += `<div style="font-size:13pt;font-weight:700;color:${kleur};margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #e0ddd5;">Sanctielijsten <span style="font-size:8pt;background:#f8f7f4;padding:1px 6px;border-radius:8px;color:#666;font-family:sans-serif;">${sanctieList.length} hits</span></div>`;
+    sectionTitle('Sanctielijsten', sanctieList.length + ' hits');
     if (sanctieList.length > 0) {
-      h += `<table style="width:100%;border-collapse:collapse;font-size:9pt;margin-bottom:12px;">`;
-      h += `<thead><tr><th style="background:${kleur};color:#fff;text-align:left;padding:6px 10px;font-size:8pt;text-transform:uppercase;">Naam</th><th style="background:${kleur};color:#fff;text-align:left;padding:6px 10px;font-size:8pt;text-transform:uppercase;">Lijst</th><th style="background:${kleur};color:#fff;text-align:left;padding:6px 10px;font-size:8pt;text-transform:uppercase;">Score</th></tr></thead><tbody>`;
+      // Tabel header
+      checkPage(8);
+      pdf.setFillColor(...kleurRgb);
+      pdf.rect(marginL, y - 3.5, contentW, 6, 'F');
+      pdf.setFontSize(7);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(255, 255, 255);
+      pdf.text('NAAM', marginL + 3, y);
+      pdf.text('LIJST', marginL + 70, y);
+      pdf.text('SCORE', marginL + 140, y);
+      y += 5;
+      // Rijen
+      pdf.setFont('helvetica', 'normal');
       sanctieList.forEach(s => {
-        h += `<tr><td style="padding:6px 10px;border-bottom:1px solid #e0ddd5;">${escapeHtml(s.naam)}</td>`;
-        h += `<td style="padding:6px 10px;border-bottom:1px solid #e0ddd5;">${escapeHtml(s.lijst || '')}</td>`;
-        h += `<td style="padding:6px 10px;border-bottom:1px solid #e0ddd5;">${s.score}%</td></tr>`;
+        checkPage(7);
+        pdf.setTextColor(51, 51, 51);
+        pdf.setFontSize(8);
+        pdf.text((s.naam || '').substring(0, 40), marginL + 3, y);
+        pdf.text((s.lijst || '').substring(0, 40), marginL + 70, y);
+        pdf.text(s.score + '%', marginL + 140, y);
+        pdf.setDrawColor(224, 221, 213);
+        pdf.line(marginL, y + 1.5, pageW - marginR, y + 1.5);
+        y += 5;
       });
-      h += `</tbody></table>`;
     } else {
-      h += `<div style="padding:8px 12px;border-left:4px solid #27ae60;border-radius:0 6px 6px 0;background:#f8f7f4;font-size:10pt;">Geen matches gevonden op EU, OFAC of VN sanctielijsten.</div>`;
+      colorBar('Geen matches gevonden op EU, OFAC of VN sanctielijsten.', [39, 174, 96]);
     }
-    h += `</div>`;
 
-    // Rechtspraak
+    // ═══ RECHTSPRAAK ═══
     const rsList = d.resultaten?.rechtspraak?.resultaten || [];
-    h += `<div style="margin-bottom:20px;">`;
-    h += `<div style="font-size:13pt;font-weight:700;color:${kleur};margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #e0ddd5;">Rechtspraak.nl <span style="font-size:8pt;background:#f8f7f4;padding:1px 6px;border-radius:8px;color:#666;font-family:sans-serif;">${rsList.length}</span></div>`;
+    sectionTitle('Rechtspraak.nl', rsList.length);
     if (rsList.length > 0) {
       rsList.forEach(r => {
-        h += `<div style="padding:6px 0;border-bottom:1px solid #eee;font-size:10pt;">`;
-        h += `<strong>${escapeHtml(r.titel || r.ecli || 'Uitspraak')}</strong>`;
-        h += `<div style="color:#666;font-size:9pt;">${escapeHtml(r.instantie || '')} ${r.datum ? '— ' + r.datum : ''}</div>`;
-        if (r.samenvatting) h += `<div style="color:#666;font-size:9pt;">${escapeHtml(r.samenvatting)}</div>`;
-        h += `</div>`;
+        checkPage(14);
+        writeText(r.titel || r.ecli || 'Uitspraak', marginL, 10, [51, 51, 51], { bold: true });
+        pdf.setFontSize(8);
+        pdf.setTextColor(102, 102, 102);
+        pdf.text((r.instantie || '') + (r.datum ? ' \u2014 ' + r.datum : ''), marginL, y);
+        y += 3;
+        if (r.samenvatting) {
+          writeText(r.samenvatting, marginL, 8, [102, 102, 102]);
+        }
+        if (r.link) {
+          writeLink(r.link, r.link, marginL, 7);
+        }
+        pdf.setDrawColor(238, 238, 238);
+        pdf.line(marginL, y, pageW - marginR, y);
+        y += 3;
       });
     } else {
-      h += `<div style="padding:8px 12px;border-left:4px solid #27ae60;border-radius:0 6px 6px 0;background:#f8f7f4;font-size:10pt;">Geen uitspraken gevonden.</div>`;
+      colorBar('Geen uitspraken gevonden.', [39, 174, 96]);
     }
-    h += `</div>`;
 
-    // Webresultaten
+    // ═══ KVK ═══
+    const kvkList = d.resultaten?.kvk?.resultaten || [];
+    if (kvkList.length > 0) {
+      sectionTitle('KvK Handelsregister', kvkList.length);
+      kvkList.forEach(k => {
+        checkPage(12);
+        writeText(k.naam + ' \u2014 KvK: ' + k.kvkNummer, marginL, 10, [51, 51, 51], { bold: true });
+        if (k.adres) {
+          writeText(k.adres, marginL, 9, [102, 102, 102]);
+        }
+        if (k.actief !== undefined) {
+          writeText('Status: ' + (k.actief ? 'Actief' : 'Niet actief'), marginL, 8, k.actief ? [39,174,96] : [192,57,43]);
+        }
+        // Link naar KvK pagina
+        const kvkUrl = 'https://www.kvk.nl/zoeken/handelsregister/?kvknummer=' + encodeURIComponent(k.kvkNummer);
+        writeLink('Bekijk op KvK.nl', kvkUrl, marginL, 7);
+        pdf.setDrawColor(238, 238, 238);
+        pdf.line(marginL, y, pageW - marginR, y);
+        y += 3;
+      });
+    }
+
+    // ═══ WEBRESULTATEN (GOOGLE) ═══
     const googleList = d.resultaten?.google || [];
     if (googleList.length > 0) {
-      h += `<div style="margin-bottom:20px;">`;
-      h += `<div style="font-size:13pt;font-weight:700;color:${kleur};margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #e0ddd5;">Webresultaten <span style="font-size:8pt;background:#f8f7f4;padding:1px 6px;border-radius:8px;color:#666;font-family:sans-serif;">${googleList.length}</span></div>`;
+      sectionTitle('Webresultaten', googleList.length);
       googleList.slice(0, 15).forEach(g => {
-        h += `<div style="padding:6px 0;border-bottom:1px solid #eee;font-size:10pt;">`;
-        h += `<strong style="color:${kleur};">${escapeHtml(g.titel)}</strong>`;
-        if (g.snippet) h += `<div style="color:#666;font-size:9pt;">${escapeHtml(g.snippet)}</div>`;
-        h += `</div>`;
+        checkPage(14);
+        // Titel als klikbare link
+        if (g.link) {
+          writeLink(g.titel || g.link, g.link, marginL, 9);
+        } else {
+          writeText(g.titel, marginL, 9, kleurRgb, { bold: true });
+        }
+        if (g.snippet) {
+          writeText(g.snippet, marginL, 8, [102, 102, 102]);
+        }
+        pdf.setDrawColor(238, 238, 238);
+        pdf.line(marginL, y, pageW - marginR, y);
+        y += 2;
       });
-      h += `</div>`;
     }
 
-    // Nieuws
+    // ═══ NIEUWSBERICHTEN ═══
     const nieuwsList = d.resultaten?.nieuws || [];
     if (nieuwsList.length > 0) {
-      h += `<div style="margin-bottom:20px;">`;
-      h += `<div style="font-size:13pt;font-weight:700;color:${kleur};margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #e0ddd5;">Nieuwsberichten <span style="font-size:8pt;background:#f8f7f4;padding:1px 6px;border-radius:8px;color:#666;font-family:sans-serif;">${nieuwsList.length}</span></div>`;
+      sectionTitle('Nieuwsberichten', nieuwsList.length);
       nieuwsList.forEach(n => {
-        h += `<div style="padding:6px 0;border-bottom:1px solid #eee;font-size:10pt;">`;
-        h += `<strong style="color:${kleur};">${escapeHtml(n.titel)}</strong>`;
-        if (n.bron || n.datum) h += `<div style="color:#666;font-size:9pt;">${escapeHtml(n.bron || '')} ${n.datum ? '— ' + n.datum : ''}</div>`;
-        if (n.snippet) h += `<div style="color:#666;font-size:9pt;">${escapeHtml(n.snippet)}</div>`;
-        h += `</div>`;
+        checkPage(14);
+        // Titel als klikbare link
+        if (n.link) {
+          writeLink(n.titel || n.link, n.link, marginL, 9);
+        } else {
+          writeText(n.titel, marginL, 9, kleurRgb, { bold: true });
+        }
+        if (n.bron || n.datum) {
+          pdf.setFontSize(8);
+          pdf.setTextColor(102, 102, 102);
+          pdf.text((n.bron || '') + (n.datum ? ' \u2014 ' + n.datum : ''), marginL, y);
+          y += 3;
+        }
+        if (n.snippet) {
+          writeText(n.snippet, marginL, 8, [102, 102, 102]);
+        }
+        pdf.setDrawColor(238, 238, 238);
+        pdf.line(marginL, y, pageW - marginR, y);
+        y += 2;
       });
-      h += `</div>`;
     }
 
-    // Query log
+    // ═══ ZOEKOPDRACHTEN (AUDIT TRAIL) ═══
     const queries = d.resultaten?.queries || [];
     if (queries.length > 0) {
-      h += `<div style="margin-bottom:20px;">`;
-      h += `<div style="font-size:13pt;font-weight:700;color:${kleur};margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #e0ddd5;">Uitgevoerde zoekopdrachten</div>`;
-      h += `<div style="font-family:'Courier New',monospace;font-size:8pt;color:#888;background:#f8f7f4;padding:8px 10px;border-radius:6px;line-height:1.5;">`;
+      sectionTitle('Uitgevoerde zoekopdrachten');
+      checkPage(10);
+      pdf.setFillColor(248, 247, 244);
+      const qLineH = 3.5;
+      const qBlockH = queries.length * qLineH + 4;
+      pdf.rect(marginL, y - 2, contentW, qBlockH, 'F');
+      pdf.setFontSize(7);
+      pdf.setFont('courier', 'normal');
+      pdf.setTextColor(136, 136, 136);
       queries.forEach(q => {
-        h += `[${(q.tijdstip || '').slice(11, 19)}] ${escapeHtml(q.type)}: ${escapeHtml(q.query)}<br>`;
+        checkPage(5);
+        pdf.text('[' + (q.tijdstip || '').slice(11, 19) + '] ' + q.type + ': ' + q.query, marginL + 3, y);
+        y += qLineH;
       });
-      h += `</div></div>`;
+      y += 4;
     }
 
-    // Disclaimer
-    h += `<div style="background:#f8f7f4;border:1px solid #e0ddd5;border-radius:6px;padding:12px 14px;font-size:9pt;color:#666;margin-top:24px;line-height:1.5;">`;
-    h += `<strong>Disclaimer:</strong> Dit rapport is een hulpmiddel bij de uitvoering van het cliëntonderzoek als bedoeld in de Wwft. Het vervangt niet de wettelijke verplichting van de verantwoordelijke instelling. De verantwoordelijke instelling blijft te allen tijde zelf verantwoordelijk voor de naleving van de Wwft en de beoordeling van de risico's.`;
+    // ═══ GERAADPLEEGDE BRONNEN ═══
+    sectionTitle('Geraadpleegde bronnen');
+    const bronnen = [
+      { naam: 'Google (via Serper.dev)', url: 'https://google.com' },
+      { naam: 'Sanctielijsten (EU, OFAC, VN via Sanctions.io)', url: 'https://sanctions.io' },
+      { naam: 'Rechtspraak.nl', url: 'https://www.rechtspraak.nl' }
+    ];
+    if (kvkList.length > 0 || d.resultaten?.kvk) {
+      bronnen.push({ naam: 'Kamer van Koophandel (KvK API)', url: 'https://www.kvk.nl' });
+    }
+    if (nieuwsList.length > 0) {
+      bronnen.push({ naam: 'Nieuwsbronnen (via Serper.dev)', url: 'https://google.com/news' });
+    }
+    bronnen.forEach(b => {
+      checkPage(6);
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(51, 51, 51);
+      pdf.text('\u2022 ' + b.naam + '  ', marginL, y);
+      const labelW = pdf.getTextWidth('\u2022 ' + b.naam + '  ');
+      pdf.setTextColor(0, 102, 204);
+      pdf.textWithLink(b.url, marginL + labelW, y, { url: b.url });
+      y += 4;
+    });
+    y += 4;
+
+    // ═══ DISCLAIMER ═══
+    checkPage(20);
+    pdf.setFillColor(248, 247, 244);
+    pdf.setDrawColor(224, 221, 213);
+    pdf.setLineWidth(0.3);
+    const disclaimerText = 'Disclaimer: Dit rapport is een hulpmiddel bij de uitvoering van het cli\u00ebntonderzoek als bedoeld in de Wwft. Het vervangt niet de wettelijke verplichting van de verantwoordelijke instelling. De verantwoordelijke instelling blijft te allen tijde zelf verantwoordelijk voor de naleving van de Wwft en de beoordeling van de risico\u2019s.';
+    pdf.setFontSize(8);
+    const discLines = pdf.splitTextToSize(disclaimerText, contentW - 8);
+    const discH = discLines.length * 3.5 + 6;
+    pdf.roundedRect(marginL, y, contentW, discH + (isProef ? 8 : 0), 2, 2, 'FD');
+    pdf.setTextColor(102, 102, 102);
+    pdf.setFont('helvetica', 'normal');
+    let discY = y + 4;
+    discLines.forEach(line => {
+      pdf.text(line, marginL + 4, discY);
+      discY += 3.5;
+    });
     if (isProef) {
-      h += `<br><br><strong style="color:#c0392b;">PROEFSCREENING — Dit rapport is niet geldig als officieel Wwft-dossier.</strong>`;
+      discY += 2;
+      pdf.setTextColor(192, 57, 43);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('PROEFSCREENING \u2014 Dit rapport is niet geldig als officieel Wwft-dossier.', marginL + 4, discY);
     }
-    h += `</div>`;
-
-    h += `</div>`;
-    return h;
   }
 
   // ─── SANCTIES FALSE POSITIVE ────────────────
