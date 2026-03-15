@@ -31,8 +31,9 @@ module.exports = async function handler(req, res) {
   try {
     // ─── SERPER: GOOGLE SEARCHES (via Mullvad VPN) ──────
     const googleQueries = [
-      `"${naam}" ${locatie ? locatie + ' ' : ''}fraude OR oplichting OR witwassen OR veroordeeld OR verdacht OR crimineel OR strafbaar`,
-      `"${naam}" rechtbank OR aanklacht OR strafzaak OR veroordeling OR OM OR justitie`
+      `"${naam}" ${locatie || ''}`.trim(),
+      `"${naam}" fraude OR oplichting OR witwassen OR veroordeeld OR verdacht`,
+      `"${naam}" rechtbank OR aanklacht OR strafzaak OR veroordeling`
     ];
 
     // Altijd mee: PEP en faillissement queries
@@ -47,9 +48,8 @@ module.exports = async function handler(req, res) {
     });
 
     // ─── SERPER: NEWS (via Mullvad VPN) ─────────────────
-    // Gefilterde nieuwsquery: zoek op naam + compliance-gerelateerde termen
-    // om irrelevante berichten (sport, entertainment) te beperken
-    const newsQuery = `"${naam}" fraude OR witwassen OR rechtbank OR veroordeeld OR verdacht OR oplichting OR sanctie OR faillissement OR onderzoek OR politie`;
+    // Nieuwsquery: brede zoek + Claude filtert irrelevante berichten eruit
+    const newsQuery = `"${naam}"`;
     resultaten.queries.push({ type: 'nieuws', query: newsQuery, tijdstip: timestamp() });
 
     const newsPromise = (async () => {

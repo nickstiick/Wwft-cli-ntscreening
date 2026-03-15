@@ -1039,16 +1039,21 @@
       // Bouw een schone print-versie van het rapport
       const printEl = document.createElement('div');
       printEl.innerHTML = buildPrintHtml();
+      // Element moet zichtbaar zijn met vaste breedte voor html2pdf
+      printEl.style.cssText = 'position:fixed;left:0;top:0;width:210mm;background:#fff;z-index:99999;padding:20mm;';
       document.body.appendChild(printEl);
+
+      // Wacht even zodat de browser het element kan renderen
+      await new Promise(r => setTimeout(r, 100));
 
       const naamClean = lastScreeningData.naam.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9\-]/g, '').toLowerCase();
       const datum = new Date().toISOString().slice(0, 10);
 
       await html2pdf().set({
-        margin: [15, 15, 20, 15],
+        margin: 0,
         filename: `Wwft-${naamClean}-${datum}.pdf`,
         image: { type: 'jpeg', quality: 0.95 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
+        html2canvas: { scale: 2, useCORS: true, logging: false, width: printEl.scrollWidth, height: printEl.scrollHeight },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
       }).from(printEl).save();
