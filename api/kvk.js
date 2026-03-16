@@ -1,51 +1,230 @@
+// KvK Handelsregister API — v2 Zoeken + v1 Basisprofiel + v1 Vestigingsprofiel
+// Supports test and production mode via KVK_TEST_MODE env var
+
+const KVK_TEST_KEY = 'l7xx1f2691f2520d487b902f4e0b57a0b197';
+
+function getBaseUrl() {
+  const isTest = process.env.KVK_TEST_MODE === 'true';
+  return isTest ? 'https://api.kvk.nl/test' : 'https://api.kvk.nl';
+}
+
+function getApiKey() {
+  const isTest = process.env.KVK_TEST_MODE === 'true';
+  return isTest ? KVK_TEST_KEY : process.env.KVK_API_KEY;
+}
+
+async function kvkFetch(url) {
+  const resp = await fetch(url, {
+    headers: {
+      'apikey': getApiKey(),
+      'Accept': 'application/json'
+    }
+  });
+  if (!resp.ok) {
+    const status = resp.status;
+    if (status === 404) return null;
+    throw new Error(`KvK API ${status}`);
+  }
+  return resp.json();
+}
+
+// ─── Zoeken (v2) ────────────────────────────────────────
+async function zoeken(params) {
+  const base = getBaseUrl();
+  const qs = new URLSearchParams({ resultatenPerPagina: '5', pagina: '1' });
+  if (params.naam) qs.set('naam', params.naam);
+  if (params.kvkNummer) qs.set('kvkNummer', params.kvkNummer);
+  if (params.vestigingsnummer) qs.set('vestigingsnummer', params.vestigingsnummer);
+  if (params.type) qs.set('type', params.type);
+  if (params.plaats) qs.set('plaats', params.plaats);
+
+  const data = await kvkFetch(`${base}/api/v2/zoeken?${qs.toString()}`);
+  if (!data) return [];
+
+  return (data.resultaten || []).map(item => ({
+    kvkNummer: item.kvkNummer || '',
+    vestigingsnummer: item.vestigingsnummer || '',
+    naam: item.naam || '',
+    type: item.type || '',
+    actief: item.actief !== false,
+    adres: formatAdres(item.adres),
+    _links: item._links || {}
+  }));
+}
+
+// ─── Basisprofiel (v1) ──────────────────────────────────
+async function basisprofiel(kvkNummer) {
+  const base = getBaseUrl();
+  const data = await kvkFetch(`${base}/api/v1/basisprofielen/${encodeURIComponent(kvkNummer)}`);
+  if (!data) return null;
+
+  const result = {
+    kvkNummer: data.kvkNummer || kvkNummer,
+    indNonMailing: data.indNonMailing || 'Nee',
+    naam: data.naam || '',
+    formeleRegistratiedatum: data.formeleRegistratiedatum || '',
+    totaalWerkzamePersonen: data.totaalWerkzamePersonen ?? null,
+    statutaireNaam: data.statutaireNaam || '',
+    handelsnamen: (data.handelsnamen || []).map(h => h.naam || h),
+    sbiActiviteiten: (data.sbiActiviteiten || []).map(s => ({
+      sbiCode: s.sbiCode || '',
+      sbiOmschrijving: s.sbiOmschrijving || ''
+    })),
+    _embedded: {}
+  };
+
+  // Eigenaar info
+  if (data._embedded?.eigenaar) {
+    const e = data._embedded.eigenaar;
+    result._embedded.eigenaar = {
+      naam: e.naam || '',
+      geboortedatum: e.geboortedatum || null,
+      overpijedDatum: e.overpijedDatum || null
+    };
+  }
+
+  // Hoofdvestiging
+  if (data._embedded?.hoofdvestiging) {
+    const h = data._embedded.hoofdvestiging;
+    result._embedded.hoofdvestiging = {
+      vestigingsnummer: h.vestigingsnummer || '',
+      eersteHandelsnaam: h.eersteHandelsnaam || '',
+      adres: formatAdresDetail(h.adressen),
+      totaalWerkzamePersonen: h.totaalWerkzamePersonen ?? null
+    };
+  }
+
+  return result;
+}
+
+// ─── Vestigingsprofiel (v1) ─────────────────────────────
+async function vestigingsprofiel(vestigingsnummer) {
+  const base = getBaseUrl();
+  const data = await kvkFetch(`${base}/api/v1/vestigingsprofielen/${encodeURIComponent(vestigingsnummer)}`);
+  if (!data) return null;
+
+  return {
+    vestigingsnummer: data.vestigingsnummer || vestigingsnummer,
+    kvkNummer: data.kvkNummer || '',
+    eersteHandelsnaam: data.eersteHandelsnaam || '',
+    indHoofdvestiging: data.indHoofdvestiging || 'Nee',
+    indCommercieleVestiging: data.indCommercieleVestiging || 'Nee',
+    totaalWerkzamePersonen: data.totaalWerkzamePersonen ?? null,
+    statutaireNaam: data.statutaireNaam || '',
+    adressen: (data.adressen || []).map(a => formatSingleAdres(a)),
+    websites: data.websites || [],
+    sbiActiviteiten: (data.sbiActiviteiten || []).map(s => ({
+      sbiCode: s.sbiCode || '',
+      sbiOmschrijving: s.sbiOmschrijving || ''
+    })),
+    formeleRegistratiedatum: data.formeleRegistratiedatum || '',
+    materieleRegistratie: data.materieleRegistratie || {}
+  };
+}
+
+// ─── Naamgeving (v1) ────────────────────────────────────
+async function naamgeving(kvkNummer) {
+  const base = getBaseUrl();
+  const data = await kvkFetch(`${base}/api/v1/naamgevingen/kvknummer/${encodeURIComponent(kvkNummer)}`);
+  if (!data) return null;
+  return {
+    kvkNummer: data.kvkNummer || kvkNummer,
+    naam: data.naam || '',
+    statutaireNaam: data.statutaireNaam || '',
+    handelsnamen: data.handelsnamen || []
+  };
+}
+
+// ─── Helpers ────────────────────────────────────────────
+function formatAdres(adres) {
+  if (!adres) return '';
+  const b = adres.binnenlandsAdres || adres;
+  return [
+    b.straatnaam, b.huisnummer, b.huisletter, b.huisnummerToevoeging,
+    b.postbusnummer ? `Postbus ${b.postbusnummer}` : '',
+    ',', b.postcode, b.plaats
+  ].filter(Boolean).join(' ').replace(' ,', ',');
+}
+
+function formatAdresDetail(adressen) {
+  if (!adressen?.length) return '';
+  // Prefer type 'bezoekadres', fallback to first
+  const addr = adressen.find(a => a.type === 'bezoekadres') || adressen[0];
+  return formatSingleAdres(addr);
+}
+
+function formatSingleAdres(a) {
+  if (!a) return '';
+  return [
+    a.straatnaam, a.huisnummer, a.huisletter, a.huisnummerToevoeging,
+    ',', a.postcode, a.plaats, a.land && a.land !== 'Nederland' ? `(${a.land})` : ''
+  ].filter(Boolean).join(' ').replace(' ,', ',');
+}
+
+// ─── HTTP Handler ───────────────────────────────────────
 module.exports = async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { naam, kvk } = req.query;
-  if (!naam && !kvk) {
-    return res.status(400).json({ error: 'Parameter "naam" of "kvk" is verplicht.' });
-  }
+  const { naam, kvk, vestiging, profiel, actie } = req.query;
 
   try {
-    let searchUrl;
-    if (kvk) {
-      searchUrl = `https://api.kvk.nl/api/v1/zoeken?kvkNummer=${encodeURIComponent(kvk)}&pagina=1&resultatenPerPagina=3`;
-    } else {
-      searchUrl = `https://api.kvk.nl/api/v1/zoeken?naam=${encodeURIComponent(naam)}&pagina=1&resultatenPerPagina=3`;
+    // Basisprofiel ophalen
+    if (actie === 'basisprofiel' && kvk) {
+      const data = await basisprofiel(kvk);
+      if (!data) return res.status(404).json({ error: 'KvK-nummer niet gevonden.' });
+      return res.status(200).json(data);
     }
 
-    const response = await fetch(searchUrl, {
-      headers: {
-        'apikey': process.env.KVK_API_KEY,
-        'Accept': 'application/json'
+    // Vestigingsprofiel ophalen
+    if (actie === 'vestigingsprofiel' && vestiging) {
+      const data = await vestigingsprofiel(vestiging);
+      if (!data) return res.status(404).json({ error: 'Vestigingsnummer niet gevonden.' });
+      return res.status(200).json(data);
+    }
+
+    // Naamgeving ophalen
+    if (actie === 'naamgeving' && kvk) {
+      const data = await naamgeving(kvk);
+      if (!data) return res.status(404).json({ error: 'Naamgeving niet gevonden.' });
+      return res.status(200).json(data);
+    }
+
+    // Standaard: zoeken
+    if (!naam && !kvk) {
+      return res.status(400).json({ error: 'Parameter "naam" of "kvk" is verplicht.' });
+    }
+
+    const zoekParams = {};
+    if (kvk) zoekParams.kvkNummer = kvk;
+    else zoekParams.naam = naam;
+
+    const resultaten = await zoeken(zoekParams);
+
+    // Auto-enrich: haal basisprofiel op voor eerste resultaat
+    let basisprofielData = null;
+    if (profiel === 'true' && resultaten.length > 0 && resultaten[0].kvkNummer) {
+      try {
+        basisprofielData = await basisprofiel(resultaten[0].kvkNummer);
+      } catch (e) {
+        console.warn('Basisprofiel ophalen mislukt:', e.message);
       }
-    });
-
-    if (!response.ok) {
-      console.error('KvK API status:', response.status);
-      return res.status(502).json({ error: 'KvK API niet bereikbaar.' });
     }
-
-    const data = await response.json();
-
-    const resultaten = (data.resultaten || []).slice(0, 3).map(item => ({
-      kvkNummer: item.kvkNummer || '',
-      naam: item.naam || '',
-      type: item.type || '',
-      adres: item.adres
-        ? `${item.adres.binnenlandsAdres?.straatnaam || ''} ${item.adres.binnenlandsAdres?.huisnummer || ''}, ${item.adres.binnenlandsAdres?.postcode || ''} ${item.adres.binnenlandsAdres?.plaats || ''}`
-        : '',
-      actief: item.actief !== false
-    }));
 
     return res.status(200).json({
       aantal: resultaten.length,
-      resultaten
+      resultaten,
+      basisprofiel: basisprofielData
     });
   } catch (error) {
     console.error('KvK proxy error:', error);
     return res.status(500).json({ error: 'Fout bij het ophalen van KvK gegevens.' });
   }
 };
+
+// Export functions for use in screen.js
+module.exports.zoeken = zoeken;
+module.exports.basisprofiel = basisprofiel;
+module.exports.vestigingsprofiel = vestigingsprofiel;
+module.exports.naamgeving = naamgeving;

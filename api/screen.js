@@ -2,6 +2,7 @@
 // Serper (Google + News) via Mullvad VPN, Sanctions.io, Rechtspraak, KvK, and Claude analysis
 
 const { serperGoogle, serperNews } = require('./search');
+const { zoeken: kvkZoekenApi, basisprofiel: kvkBasisprofiel, vestigingsprofiel: kvkVestigingsprofiel } = require('./kvk');
 const supabase = require('./_supabase');
 
 module.exports = async function handler(req, res) {
@@ -109,17 +110,54 @@ module.exports = async function handler(req, res) {
       }
     })();
 
-    // ─── KVK (optioneel) ────────────────────────────────
-    let kvkPromise = Promise.resolve({ resultaten: [] });
+    // ─── KVK (optioneel, meerprijs) ──────────────────────
+    let kvkPromise = Promise.resolve({ resultaten: [], basisprofiel: null, vestigingsprofielen: [] });
     if (kvkZoeken && (type === 'rechtspersoon' || type === 'ubo')) {
       resultaten.queries.push({ type: 'kvk', query: naam, tijdstip: timestamp() });
       kvkPromise = (async () => {
         try {
-          const baseUrl = getBaseUrl(req);
-          const resp = await fetch(`${baseUrl}/api/kvk?naam=${encodeURIComponent(naam)}`);
-          return await resp.json();
+          // Stap 1: Zoeken op naam
+          const zoekResultaten = await kvkZoekenApi({ naam });
+          if (!zoekResultaten.length) return { resultaten: [], basisprofiel: null, vestigingsprofielen: [] };
+
+          // Map naar bestaand format + bewaar vestigingsnummers
+          const resultatenMapped = zoekResultaten.slice(0, 5).map(item => ({
+            kvkNummer: item.kvkNummer,
+            vestigingsnummer: item.vestigingsnummer,
+            naam: item.naam,
+            type: item.type,
+            adres: item.adres,
+            actief: item.actief
+          }));
+
+          // Stap 2: Basisprofiel ophalen voor eerste KvK-nummer
+          let basisprofielData = null;
+          const eersteKvk = resultatenMapped.find(r => r.kvkNummer)?.kvkNummer;
+          if (eersteKvk) {
+            resultaten.queries.push({ type: 'kvk-basisprofiel', query: eersteKvk, tijdstip: timestamp() });
+            try {
+              basisprofielData = await kvkBasisprofiel(eersteKvk);
+            } catch (e) {
+              console.warn('KvK basisprofiel mislukt:', e.message);
+            }
+          }
+
+          // Stap 3: Vestigingsprofielen ophalen voor unieke vestigingsnummers
+          const vestigingsprofielen = [];
+          const vestigingsnummers = [...new Set(resultatenMapped.map(r => r.vestigingsnummer).filter(Boolean))].slice(0, 3);
+          for (const vn of vestigingsnummers) {
+            resultaten.queries.push({ type: 'kvk-vestiging', query: vn, tijdstip: timestamp() });
+            try {
+              const vp = await kvkVestigingsprofiel(vn);
+              if (vp) vestigingsprofielen.push(vp);
+            } catch (e) {
+              console.warn('KvK vestigingsprofiel mislukt:', e.message);
+            }
+          }
+
+          return { resultaten: resultatenMapped, basisprofiel: basisprofielData, vestigingsprofielen };
         } catch {
-          return { resultaten: [] };
+          return { resultaten: [], basisprofiel: null, vestigingsprofielen: [] };
         }
       })();
     }

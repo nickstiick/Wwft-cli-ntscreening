@@ -35,19 +35,23 @@ module.exports = async function handler(req, res) {
 
     const creditsOver = record.credits_totaal - record.credits_gebruikt;
 
-    // Als gebruik=true, schrijf een credit af
+    // Als gebruik=true, schrijf credits af (aantal: 1 standaard, 2 bij KvK)
     if (gebruik) {
-      if (creditsOver <= 0) {
+      const aantal = Math.max(1, Math.min(parseInt(req.body.aantal) || 1, 5));
+
+      if (creditsOver < aantal) {
         return res.status(402).json({
-          error: 'Geen credits meer beschikbaar.',
-          credits_over: 0,
+          error: aantal > 1
+            ? `Niet genoeg credits. U heeft ${creditsOver} credit(s), maar deze screening kost ${aantal} credits (inclusief KvK opzoeken).`
+            : 'Geen credits meer beschikbaar.',
+          credits_over: creditsOver,
           koopUrl: '/'
         });
       }
 
       const { error: updateError } = await supabase
         .from('activatiecodes')
-        .update({ credits_gebruikt: record.credits_gebruikt + 1 })
+        .update({ credits_gebruikt: record.credits_gebruikt + aantal })
         .eq('code', code.toUpperCase());
 
       if (updateError) {
@@ -57,10 +61,11 @@ module.exports = async function handler(req, res) {
 
       return res.status(200).json({
         geldig: true,
-        credits_over: creditsOver - 1,
+        credits_over: creditsOver - aantal,
         credits_totaal: record.credits_totaal,
         bundel: record.bundel,
-        geldig_tot: record.geldig_tot
+        geldig_tot: record.geldig_tot,
+        credits_afgeschreven: aantal
       });
     }
 

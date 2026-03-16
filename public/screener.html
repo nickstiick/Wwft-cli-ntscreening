@@ -625,7 +625,7 @@
         <label>&nbsp;</label>
         <div class="checkbox-group">
           <input type="checkbox" id="kvkZoeken">
-          <label for="kvkZoeken">KvK opzoeken</label>
+          <label for="kvkZoeken">KvK opzoeken <span style="font-size:11px; color:var(--gold); font-family:sans-serif;">(+1 credit)</span></label>
         </div>
         <div class="checkbox-group" style="margin-top:6px;">
           <input type="checkbox" id="hercheckAan">
@@ -689,6 +689,7 @@
       <li id="step-nieuws"><span class="step-icon"></span> Nieuwsberichten ophalen</li>
       <li id="step-sancties"><span class="step-icon"></span> Sanctielijsten controleren</li>
       <li id="step-rechtspraak"><span class="step-icon"></span> Rechtspraak.nl doorzoeken</li>
+      <li id="step-kvk" style="display:none;"><span class="step-icon"></span> KvK Handelsregister doorzoeken</li>
       <li id="step-analyse"><span class="step-icon"></span> AI-analyse uitvoeren</li>
     </ul>
   </div>
@@ -817,8 +818,18 @@
       $('kvkZoeken').checked = true;
     }
     updateKvkMonitoringVisibility();
+    updateSubmitBtnLabel();
   });
-  $('kvkZoeken').addEventListener('change', updateKvkMonitoringVisibility);
+  $('kvkZoeken').addEventListener('change', () => {
+    updateKvkMonitoringVisibility();
+    updateSubmitBtnLabel();
+  });
+
+  function updateSubmitBtnLabel() {
+    if (submitBtn.disabled) return;
+    const kvkAan = $('kvkZoeken').checked;
+    submitBtn.textContent = kvkAan ? 'Screening starten (2 credits)' : 'Screening starten';
+  }
   // Check bij pagina-load
   if ($('type').value === 'rechtspersoon' || $('type').value === 'ubo') {
     $('kvkZoeken').checked = true;
@@ -897,7 +908,11 @@
       isProef = true;
     }
 
-    // If not proef, deduct credit server-side
+    // Bepaal aantal credits: 1 standaard + 1 extra voor KvK
+    const kvkAan = $('kvkZoeken').checked;
+    const creditAantal = kvkAan ? 2 : 1;
+
+    // If not proef, deduct credit(s) server-side
     if (!isProef && activatiecode) {
       setStep('step-credit', 'active');
       progressPanel.classList.add('visible');
@@ -905,17 +920,21 @@
         const res = await fetch('/api/activate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code: activatiecode, gebruik: true })
+          body: JSON.stringify({ code: activatiecode, gebruik: true, aantal: creditAantal })
         });
         const data = await res.json();
         if (!res.ok) {
           setStep('step-credit', 'error');
+          $('progressSubtitle').textContent = data.error || 'Credit afschrijven mislukt.';
+          $('progressSubtitle').style.color = 'var(--red)';
           if (res.status === 402) {
-            credits = 0;
-            localStorage.setItem('dossier_credits', '0');
+            credits = data.credits_over || 0;
+            localStorage.setItem('dossier_credits', credits);
             noCreditsMsg.style.display = 'block';
             updateCreditBadge();
           }
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Screening starten';
           return;
         }
         credits = data.credits_over;
@@ -924,6 +943,8 @@
         setStep('step-credit', 'done');
       } catch {
         setStep('step-credit', 'error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Screening starten';
         return;
       }
     } else {
@@ -937,11 +958,15 @@
     resultsPanel.innerHTML = '';
     $('progressBarFill').style.width = '10%';
 
+    // Show/hide KvK step
+    $('step-kvk').style.display = kvkAan ? 'flex' : 'none';
+
     // Show progress
     setStep('step-google', 'active');
     setStep('step-nieuws', 'active');
     setStep('step-sancties', 'active');
     setStep('step-rechtspraak', 'active');
+    if (kvkAan) setStep('step-kvk', 'active');
 
     try {
       const body = {
@@ -977,6 +1002,7 @@
       setStep('step-nieuws', 'done');
       setStep('step-sancties', 'done');
       setStep('step-rechtspraak', 'done');
+      if (kvkAan) setStep('step-kvk', 'done');
       setStep('step-analyse', 'active');
       $('progressBarFill').style.width = '80%';
 
@@ -1172,16 +1198,88 @@
     }
     html += `</div>`;
 
-    // KvK
+    // KvK — uitgebreid met basisprofiel en vestigingen
     if (r.kvk?.resultaten?.length > 0) {
       html += `<div class="result-section">`;
-      html += `<h3>KvK <span class="section-count">${r.kvk.resultaten.length}</span></h3>`;
+      html += `<h3>KvK Handelsregister <span class="section-count">${r.kvk.resultaten.length} resultaten</span></h3>`;
+
+      // Basisprofiel (als beschikbaar)
+      if (r.kvk.basisprofiel) {
+        const bp = r.kvk.basisprofiel;
+        html += `<div style="background:var(--cream); border:1px solid var(--border); border-radius:var(--radius); padding:16px 20px; margin-bottom:12px;">`;
+        html += `<div style="font-size:16px; font-weight:bold; color:var(--navy); margin-bottom:8px;">${escapeHtml(bp.naam || bp.statutaireNaam)}</div>`;
+        html += `<div style="display:grid; grid-template-columns:1fr 1fr; gap:6px 20px; font-size:13px; font-family:sans-serif;">`;
+        html += `<div><span style="color:var(--text-light);">KvK-nummer:</span> <strong>${escapeHtml(bp.kvkNummer)}</strong></div>`;
+        if (bp.formeleRegistratiedatum) html += `<div><span style="color:var(--text-light);">Registratiedatum:</span> ${escapeHtml(bp.formeleRegistratiedatum)}</div>`;
+        if (bp.totaalWerkzamePersonen != null) html += `<div><span style="color:var(--text-light);">Werkzame personen:</span> ${bp.totaalWerkzamePersonen}</div>`;
+        if (bp.statutaireNaam && bp.statutaireNaam !== bp.naam) html += `<div><span style="color:var(--text-light);">Statutaire naam:</span> ${escapeHtml(bp.statutaireNaam)}</div>`;
+        html += `</div>`;
+
+        // SBI activiteiten
+        if (bp.sbiActiviteiten?.length > 0) {
+          html += `<div style="margin-top:8px; font-size:12px; font-family:sans-serif; color:var(--text-light);">`;
+          html += `<strong style="color:var(--text);">Activiteiten:</strong> `;
+          html += bp.sbiActiviteiten.map(s => `${escapeHtml(s.sbiOmschrijving)} (${escapeHtml(s.sbiCode)})`).join(', ');
+          html += `</div>`;
+        }
+
+        // Handelsnamen
+        if (bp.handelsnamen?.length > 1) {
+          html += `<div style="margin-top:6px; font-size:12px; font-family:sans-serif; color:var(--text-light);">`;
+          html += `<strong style="color:var(--text);">Handelsnamen:</strong> ${bp.handelsnamen.map(h => escapeHtml(h)).join(', ')}`;
+          html += `</div>`;
+        }
+
+        // Eigenaar
+        if (bp._embedded?.eigenaar?.naam) {
+          html += `<div style="margin-top:6px; font-size:12px; font-family:sans-serif; color:var(--text-light);">`;
+          html += `<strong style="color:var(--text);">Eigenaar:</strong> ${escapeHtml(bp._embedded.eigenaar.naam)}`;
+          if (bp._embedded.eigenaar.geboortedatum) html += ` (geb. ${escapeHtml(bp._embedded.eigenaar.geboortedatum)})`;
+          html += `</div>`;
+        }
+
+        // Hoofdvestiging
+        if (bp._embedded?.hoofdvestiging) {
+          const hv = bp._embedded.hoofdvestiging;
+          html += `<div style="margin-top:6px; font-size:12px; font-family:sans-serif; color:var(--text-light);">`;
+          html += `<strong style="color:var(--text);">Hoofdvestiging:</strong> ${escapeHtml(hv.eersteHandelsnaam || '')}`;
+          if (hv.adres) html += ` — ${escapeHtml(hv.adres)}`;
+          html += `</div>`;
+        }
+        html += `</div>`;
+      }
+
+      // Zoekresultaten
       r.kvk.resultaten.forEach(k => {
-        html += `<div class="bron-item">`;
+        html += `<div class="bron-item" style="display:flex; justify-content:space-between; align-items:flex-start;">`;
+        html += `<div>`;
         html += `<strong>${escapeHtml(k.naam)}</strong> — KvK: ${escapeHtml(k.kvkNummer)}`;
+        if (k.vestigingsnummer) html += ` <span style="font-size:12px; color:var(--text-light);">(vest. ${escapeHtml(k.vestigingsnummer)})</span>`;
+        if (k.type) html += `<span style="font-size:11px; background:var(--cream); padding:2px 6px; border-radius:3px; margin-left:6px;">${escapeHtml(k.type)}</span>`;
         if (k.adres) html += `<div class="snippet">${escapeHtml(k.adres)}</div>`;
         html += `</div>`;
+        html += `<span style="font-size:11px; font-family:sans-serif; padding:3px 8px; border-radius:4px; white-space:nowrap; ${k.actief !== false ? 'background:#f0faf4; color:var(--green);' : 'background:#fdf0ef; color:var(--red);'}">${k.actief !== false ? 'Actief' : 'Inactief'}</span>`;
+        html += `</div>`;
       });
+
+      // Vestigingsprofielen
+      if (r.kvk.vestigingsprofielen?.length > 0) {
+        html += `<div style="margin-top:12px; border-top:1px solid var(--border); padding-top:12px;">`;
+        html += `<div style="font-size:13px; font-weight:bold; color:var(--navy); margin-bottom:8px;">Vestigingsdetails</div>`;
+        r.kvk.vestigingsprofielen.forEach(v => {
+          html += `<div style="font-size:13px; font-family:sans-serif; padding:8px 0; border-bottom:1px solid var(--border);">`;
+          html += `<strong>${escapeHtml(v.eersteHandelsnaam)}</strong>`;
+          html += ` <span style="font-size:11px; color:var(--text-light);">${v.indHoofdvestiging === 'Ja' ? '(hoofdvestiging)' : '(nevenvestiging)'}</span>`;
+          if (v.adressen?.length > 0) html += `<div style="color:var(--text-light); margin-top:2px;">${escapeHtml(v.adressen[0])}</div>`;
+          if (v.sbiActiviteiten?.length > 0) {
+            html += `<div style="color:var(--text-light); margin-top:2px;">Activiteiten: ${v.sbiActiviteiten.map(s => escapeHtml(s.sbiOmschrijving)).join(', ')}</div>`;
+          }
+          if (v.websites?.length > 0) html += `<div style="margin-top:2px;"><a href="${escapeHtml(v.websites[0])}" target="_blank" rel="noopener" style="color:var(--navy); font-size:12px;">${escapeHtml(v.websites[0])}</a></div>`;
+          html += `</div>`;
+        });
+        html += `</div>`;
+      }
+
       html += `</div>`;
     }
 
@@ -1587,24 +1685,85 @@
 
     // ═══ KVK ═══
     const kvkList = d.resultaten?.kvk?.resultaten || [];
-    if (kvkList.length > 0) {
+    const kvkBasis = d.resultaten?.kvk?.basisprofiel;
+    if (kvkList.length > 0 || kvkBasis) {
       sectionTitle('KvK Handelsregister', kvkList.length);
+
+      // Basisprofiel block
+      if (kvkBasis) {
+        checkPage(30);
+        pdf.setFillColor(248, 247, 244);
+        pdf.roundedRect(marginL, y - 2, contentW, 4, 1, 1, 'F');
+        y += 1;
+
+        writeText(kvkBasis.naam || kvkBasis.statutaireNaam || '', marginL, 11, kleurRgb, { bold: true });
+        y += 1;
+
+        const bpLines = [];
+        bpLines.push('KvK-nummer: ' + (kvkBasis.kvkNummer || ''));
+        if (kvkBasis.formeleRegistratiedatum) bpLines.push('Registratiedatum: ' + kvkBasis.formeleRegistratiedatum);
+        if (kvkBasis.totaalWerkzamePersonen != null) bpLines.push('Werkzame personen: ' + kvkBasis.totaalWerkzamePersonen);
+        if (kvkBasis.statutaireNaam && kvkBasis.statutaireNaam !== kvkBasis.naam) bpLines.push('Statutaire naam: ' + kvkBasis.statutaireNaam);
+        bpLines.forEach(line => {
+          writeText(line, marginL, 8, [102, 102, 102]);
+        });
+
+        if (kvkBasis.sbiActiviteiten?.length > 0) {
+          writeText('Activiteiten: ' + kvkBasis.sbiActiviteiten.map(s => s.sbiOmschrijving + ' (' + s.sbiCode + ')').join(', '), marginL, 8, [102, 102, 102]);
+        }
+        if (kvkBasis.handelsnamen?.length > 1) {
+          writeText('Handelsnamen: ' + kvkBasis.handelsnamen.join(', '), marginL, 8, [102, 102, 102]);
+        }
+        if (kvkBasis._embedded?.eigenaar?.naam) {
+          let eigenaarTxt = 'Eigenaar: ' + kvkBasis._embedded.eigenaar.naam;
+          if (kvkBasis._embedded.eigenaar.geboortedatum) eigenaarTxt += ' (geb. ' + kvkBasis._embedded.eigenaar.geboortedatum + ')';
+          writeText(eigenaarTxt, marginL, 8, [51, 51, 51], { bold: true });
+        }
+        if (kvkBasis._embedded?.hoofdvestiging) {
+          const hv = kvkBasis._embedded.hoofdvestiging;
+          writeText('Hoofdvestiging: ' + (hv.eersteHandelsnaam || '') + (hv.adres ? ' \u2014 ' + hv.adres : ''), marginL, 8, [102, 102, 102]);
+        }
+        y += 3;
+        pdf.setDrawColor(224, 221, 213);
+        pdf.line(marginL, y, pageW - marginR, y);
+        y += 4;
+      }
+
+      // Zoekresultaten
       kvkList.forEach(k => {
         checkPage(12);
-        writeText(k.naam + ' \u2014 KvK: ' + k.kvkNummer, marginL, 10, [51, 51, 51], { bold: true });
+        writeText(k.naam + ' \u2014 KvK: ' + k.kvkNummer + (k.vestigingsnummer ? ' (vest. ' + k.vestigingsnummer + ')' : ''), marginL, 9, [51, 51, 51], { bold: true });
         if (k.adres) {
-          writeText(k.adres, marginL, 9, [102, 102, 102]);
+          writeText(k.adres, marginL, 8, [102, 102, 102]);
         }
         if (k.actief !== undefined) {
           writeText('Status: ' + (k.actief ? 'Actief' : 'Niet actief'), marginL, 8, k.actief ? [39,174,96] : [192,57,43]);
         }
-        // Link naar KvK pagina
+        if (k.type) {
+          writeText('Type: ' + k.type, marginL, 7, [150, 150, 150]);
+        }
         const kvkUrl = 'https://www.kvk.nl/zoeken/handelsregister/?kvknummer=' + encodeURIComponent(k.kvkNummer);
         writeLink('Bekijk op KvK.nl', kvkUrl, marginL, 7);
         pdf.setDrawColor(238, 238, 238);
         pdf.line(marginL, y, pageW - marginR, y);
         y += 3;
       });
+
+      // Vestigingsprofielen
+      const vpList = d.resultaten?.kvk?.vestigingsprofielen || [];
+      if (vpList.length > 0) {
+        y += 2;
+        writeText('Vestigingsdetails', marginL, 9, kleurRgb, { bold: true });
+        vpList.forEach(v => {
+          checkPage(12);
+          writeText(v.eersteHandelsnaam + (v.indHoofdvestiging === 'Ja' ? ' (hoofdvestiging)' : ' (nevenvestiging)'), marginL, 8, [51, 51, 51], { bold: true });
+          if (v.adressen?.length > 0) writeText(v.adressen[0], marginL, 7, [102, 102, 102]);
+          if (v.sbiActiviteiten?.length > 0) writeText('Activiteiten: ' + v.sbiActiviteiten.map(s => s.sbiOmschrijving).join(', '), marginL, 7, [102, 102, 102]);
+          pdf.setDrawColor(238, 238, 238);
+          pdf.line(marginL, y, pageW - marginR, y);
+          y += 2;
+        });
+      }
     }
 
     // ═══ WEBRESULTATEN (GOOGLE) ═══
@@ -1746,7 +1905,7 @@
     $('progressSubtitle').textContent = 'Even geduld, dit duurt meestal 15\u201330 seconden.';
     $('progressSubtitle').style.color = '';
     // Reset step icons
-    ['step-credit','step-google','step-nieuws','step-sancties','step-rechtspraak','step-analyse'].forEach(id => {
+    ['step-credit','step-google','step-nieuws','step-sancties','step-rechtspraak','step-kvk','step-analyse'].forEach(id => {
       const el = $(id);
       el.className = '';
       const existing = el.querySelector('.spinner') || el.querySelector('.step-icon');
