@@ -2,7 +2,7 @@
 // Serper (Google + News) via Mullvad VPN, Sanctions.io, Rechtspraak, KvK, and Claude analysis
 
 const { serperGoogle, serperNews } = require('./search');
-const { zoeken: kvkZoekenApi, basisprofiel: kvkBasisprofiel, vestigingsprofiel: kvkVestigingsprofiel } = require('./kvk');
+const { zoeken: kvkZoekenApi, basisprofiel: kvkBasisprofiel, vestigingsprofiel: kvkVestigingsprofiel } = require('./_kvk');
 const supabase = require('./_supabase');
 
 module.exports = async function handler(req, res) {
