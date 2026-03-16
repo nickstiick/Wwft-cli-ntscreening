@@ -2,7 +2,6 @@
 // Serper (Google + News) via Mullvad VPN, Sanctions.io, Rechtspraak, KvK, and Claude analysis
 
 const { serperGoogle, serperNews } = require('./search');
-const { zoeken: kvkZoekenApi, basisprofiel: kvkBasisprofiel, vestigingsprofiel: kvkVestigingsprofiel } = require('./_kvk');
 const supabase = require('./_supabase');
 
 module.exports = async function handler(req, res) {
@@ -116,46 +115,33 @@ module.exports = async function handler(req, res) {
       resultaten.queries.push({ type: 'kvk', query: naam, tijdstip: timestamp() });
       kvkPromise = (async () => {
         try {
-          // Stap 1: Zoeken op naam
-          const zoekResultaten = await kvkZoekenApi({ naam });
+          const baseUrl = getBaseUrl(req);
+          // Zoeken + basisprofiel in één aanroep
+          const resp = await fetch(`${baseUrl}/api/kvk?naam=${encodeURIComponent(naam)}&profiel=true`);
+          const kvkData = await resp.json();
+          const zoekResultaten = kvkData.resultaten || [];
           if (!zoekResultaten.length) return { resultaten: [], basisprofiel: null, vestigingsprofielen: [] };
 
-          // Map naar bestaand format + bewaar vestigingsnummers
-          const resultatenMapped = zoekResultaten.slice(0, 5).map(item => ({
-            kvkNummer: item.kvkNummer,
-            vestigingsnummer: item.vestigingsnummer,
-            naam: item.naam,
-            type: item.type,
-            adres: item.adres,
-            actief: item.actief
-          }));
-
-          // Stap 2: Basisprofiel ophalen voor eerste KvK-nummer
-          let basisprofielData = null;
-          const eersteKvk = resultatenMapped.find(r => r.kvkNummer)?.kvkNummer;
-          if (eersteKvk) {
-            resultaten.queries.push({ type: 'kvk-basisprofiel', query: eersteKvk, tijdstip: timestamp() });
-            try {
-              basisprofielData = await kvkBasisprofiel(eersteKvk);
-            } catch (e) {
-              console.warn('KvK basisprofiel mislukt:', e.message);
-            }
-          }
-
-          // Stap 3: Vestigingsprofielen ophalen voor unieke vestigingsnummers
+          // Vestigingsprofielen ophalen voor unieke vestigingsnummers
           const vestigingsprofielen = [];
-          const vestigingsnummers = [...new Set(resultatenMapped.map(r => r.vestigingsnummer).filter(Boolean))].slice(0, 3);
+          const vestigingsnummers = [...new Set(zoekResultaten.map(r => r.vestigingsnummer).filter(Boolean))].slice(0, 3);
           for (const vn of vestigingsnummers) {
-            resultaten.queries.push({ type: 'kvk-vestiging', query: vn, tijdstip: timestamp() });
             try {
-              const vp = await kvkVestigingsprofiel(vn);
-              if (vp) vestigingsprofielen.push(vp);
+              const vpResp = await fetch(`${baseUrl}/api/kvk?actie=vestigingsprofiel&vestiging=${encodeURIComponent(vn)}`);
+              if (vpResp.ok) {
+                const vp = await vpResp.json();
+                vestigingsprofielen.push(vp);
+              }
             } catch (e) {
               console.warn('KvK vestigingsprofiel mislukt:', e.message);
             }
           }
 
-          return { resultaten: resultatenMapped, basisprofiel: basisprofielData, vestigingsprofielen };
+          return {
+            resultaten: zoekResultaten,
+            basisprofiel: kvkData.basisprofiel || null,
+            vestigingsprofielen
+          };
         } catch {
           return { resultaten: [], basisprofiel: null, vestigingsprofielen: [] };
         }
@@ -277,8 +263,11 @@ module.exports = async function handler(req, res) {
     });
 
   } catch (error) {
-    console.error('Screen error:', error);
-    return res.status(500).json({ error: 'Er ging iets mis bij de screening. Probeer het opnieuw.' });
+    console.error('Screen error:', error?.message || error, error?.stack);
+    return res.status(500).json({
+      error: 'Er ging iets mis bij de screening. Probeer het opnieuw.',
+      debug: process.env.NODE_ENV !== 'production' ? (error?.message || String(error)) : undefined
+    });
   }
 };
 
