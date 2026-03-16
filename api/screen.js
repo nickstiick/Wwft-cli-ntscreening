@@ -1,7 +1,7 @@
 // API endpoint that orchestrates the full screening:
 // Serper (Google + News) via Mullvad VPN, Sanctions.io, Rechtspraak, KvK, and Claude analysis
 
-const { serperGoogle, serperNews } = require('./search');
+const { serperGoogle, serperNews } = require('./_search');
 const supabase = require('./_supabase');
 
 module.exports = async function handler(req, res) {
