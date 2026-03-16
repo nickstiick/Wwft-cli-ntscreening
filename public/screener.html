@@ -78,6 +78,7 @@
       border-radius: var(--radius);
       padding: 20px 24px;
       margin-bottom: 28px;
+      transition: all 0.3s ease;
     }
     .activation-bar.activated {
       border-color: var(--green);
@@ -101,8 +102,9 @@
       font-size: 15px;
       text-transform: uppercase;
       letter-spacing: 1px;
+      transition: border-color 0.2s;
     }
-    .activation-row input:focus { outline: none; border-color: var(--navy); }
+    .activation-row input:focus { outline: none; border-color: var(--navy); box-shadow: 0 0 0 3px rgba(26,26,46,0.08); }
     .activation-row button {
       padding: 10px 20px;
       background: var(--navy);
@@ -112,7 +114,9 @@
       font-family: inherit;
       font-size: 14px;
       cursor: pointer;
+      transition: background 0.2s;
     }
+    .activation-row button:hover { background: var(--navy-light); }
     .activation-status {
       font-size: 13px;
       margin-top: 8px;
@@ -169,12 +173,26 @@
       border-radius: var(--radius);
       font-family: inherit;
       font-size: 15px;
+      transition: border-color 0.2s, box-shadow 0.2s;
     }
     .form-group input:focus,
     .form-group select:focus {
       outline: none;
       border-color: var(--navy);
+      box-shadow: 0 0 0 3px rgba(26,26,46,0.08);
     }
+    .form-group input.input-error {
+      border-color: var(--red);
+      box-shadow: 0 0 0 3px rgba(192,57,43,0.08);
+    }
+    .field-error {
+      font-size: 12px;
+      color: var(--red);
+      margin-top: 4px;
+      font-family: sans-serif;
+      display: none;
+    }
+    .field-error.visible { display: block; }
     .checkbox-group {
       display: flex;
       align-items: center;
@@ -220,10 +238,11 @@
       font-weight: bold;
       cursor: pointer;
       margin-top: 20px;
-      transition: background 0.2s;
+      transition: all 0.2s;
     }
-    .submit-btn:hover { background: var(--navy-light); }
-    .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .submit-btn:hover { background: var(--navy-light); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(26,26,46,0.2); }
+    .submit-btn:active { transform: translateY(0); }
+    .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
 
     /* ─── PROGRESS ─────────────────────────── */
     .progress-panel {
@@ -234,11 +253,31 @@
       padding: 28px 24px;
       margin-bottom: 28px;
     }
-    .progress-panel.visible { display: block; }
+    .progress-panel.visible { display: block; animation: fadeSlideIn 0.3s ease; }
     .progress-panel h3 {
       font-size: 17px;
       color: var(--navy);
+      margin-bottom: 4px;
+    }
+    .progress-subtitle {
+      font-size: 13px;
+      color: var(--text-light);
       margin-bottom: 16px;
+      font-family: sans-serif;
+    }
+    .progress-bar-track {
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--gold);
+      border-radius: 2px;
+      width: 0%;
+      transition: width 0.5s ease;
     }
     .progress-steps { list-style: none; }
     .progress-steps li {
@@ -248,6 +287,7 @@
       display: flex;
       align-items: center;
       gap: 10px;
+      transition: color 0.3s;
     }
     .progress-steps li.done { color: var(--green); }
     .progress-steps li.active { color: var(--navy); font-weight: bold; }
@@ -262,12 +302,14 @@
       justify-content: center;
       font-size: 11px;
       flex-shrink: 0;
+      transition: all 0.3s;
     }
     .done .step-icon { background: var(--green); border-color: var(--green); color: #fff; }
     .active .step-icon { border-color: var(--navy); }
     .error .step-icon { background: var(--red); border-color: var(--red); color: #fff; }
 
     @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
     .spinner {
       width: 18px;
       height: 18px;
@@ -282,7 +324,7 @@
     .results-panel {
       display: none;
     }
-    .results-panel.visible { display: block; }
+    .results-panel.visible { display: block; animation: fadeSlideIn 0.4s ease; }
 
     .risk-banner {
       padding: 28px;
@@ -404,10 +446,12 @@
     }
 
     .download-btn {
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
       background: var(--gold);
       color: var(--navy);
-      padding: 12px 28px;
+      padding: 14px 32px;
       border: none;
       border-radius: var(--radius);
       font-family: inherit;
@@ -415,9 +459,29 @@
       font-weight: bold;
       cursor: pointer;
       margin-top: 20px;
-      transition: background 0.2s;
+      transition: all 0.2s;
     }
-    .download-btn:hover { background: var(--gold-light); }
+    .download-btn:hover { background: var(--gold-light); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(201,168,76,0.3); }
+    .download-btn:active { transform: translateY(0); }
+    .download-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    .new-screening-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: transparent;
+      color: var(--navy);
+      padding: 12px 24px;
+      border: 2px solid var(--navy);
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 12px;
+      transition: all 0.2s;
+    }
+    .new-screening-btn:hover { background: var(--navy); color: #fff; }
 
     .watermark {
       position: fixed;
@@ -438,13 +502,50 @@
       background: #fef9ec;
       border: 1px solid var(--orange);
       border-radius: var(--radius);
-      padding: 20px;
+      padding: 20px 24px;
       text-align: center;
       margin-bottom: 20px;
+      animation: fadeSlideIn 0.3s ease;
     }
     .no-credits-msg a {
       color: var(--navy);
       font-weight: bold;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .no-credits-msg a:hover { color: var(--gold); }
+
+    /* ─── TOOLTIP ──────────────────────────── */
+    .help-tip {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      background: var(--border);
+      color: var(--text-light);
+      border-radius: 50%;
+      text-align: center;
+      font-size: 11px;
+      line-height: 16px;
+      font-family: sans-serif;
+      cursor: help;
+      position: relative;
+      vertical-align: middle;
+      margin-left: 4px;
+    }
+    .help-tip:hover::after {
+      content: attr(data-tip);
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: calc(100% + 6px);
+      background: var(--navy);
+      color: #fff;
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 4px;
+      white-space: nowrap;
+      z-index: 10;
+      pointer-events: none;
     }
 
     @media (max-width: 600px) {
@@ -497,14 +598,15 @@
     <div class="form-grid">
       <div class="form-group full">
         <label for="naam">Volledige naam *</label>
-        <input type="text" id="naam" placeholder="Jan de Vries" required>
+        <input type="text" id="naam" placeholder="Bijv. Jan de Vries of Bakker B.V." required>
+        <div class="field-error" id="naamError">Vul de naam in van de persoon of organisatie die u wilt screenen.</div>
       </div>
       <div class="form-group">
-        <label for="geboortedatum">Geboortedatum</label>
+        <label for="geboortedatum">Geboortedatum <span class="help-tip" data-tip="Optioneel — helpt bij nauwkeurigere resultaten">?</span></label>
         <input type="date" id="geboortedatum">
       </div>
       <div class="form-group">
-        <label for="locatie">Woonplaats / vestigingsplaats</label>
+        <label for="locatie">Woonplaats / vestigingsplaats <span class="help-tip" data-tip="Optioneel — verfijnt zoekresultaten">?</span></label>
         <input type="text" id="locatie" placeholder="Amsterdam">
       </div>
       <div class="form-group">
@@ -579,6 +681,8 @@
   <!-- Progress -->
   <div class="progress-panel" id="progressPanel">
     <h3>Screening wordt uitgevoerd...</h3>
+    <div class="progress-subtitle" id="progressSubtitle">Even geduld, dit duurt meestal 15–30 seconden.</div>
+    <div class="progress-bar-track"><div class="progress-bar-fill" id="progressBarFill"></div></div>
     <ul class="progress-steps" id="progressSteps">
       <li id="step-credit"><span class="step-icon"></span> Credit controleren</li>
       <li id="step-google"><span class="step-icon"></span> Google doorzoeken</li>
@@ -768,9 +872,17 @@
   // ─── SUBMIT SCREENING ─────────────────────
   submitBtn.addEventListener('click', startScreening);
 
+  // Clear validation on typing
+  $('naam').addEventListener('input', function() {
+    this.classList.remove('input-error');
+    $('naamError').classList.remove('visible');
+  });
+
   async function startScreening() {
     const naam = $('naam').value.trim();
     if (!naam) {
+      $('naam').classList.add('input-error');
+      $('naamError').classList.add('visible');
       $('naam').focus();
       return;
     }
@@ -820,8 +932,10 @@
     }
 
     submitBtn.disabled = true;
+    submitBtn.textContent = 'Bezig...';
     resultsPanel.classList.remove('visible');
     resultsPanel.innerHTML = '';
+    $('progressBarFill').style.width = '10%';
 
     // Show progress
     setStep('step-google', 'active');
@@ -858,22 +972,29 @@
         body: JSON.stringify(body)
       });
 
+      $('progressBarFill').style.width = '60%';
       setStep('step-google', 'done');
       setStep('step-nieuws', 'done');
       setStep('step-sancties', 'done');
       setStep('step-rechtspraak', 'done');
       setStep('step-analyse', 'active');
+      $('progressBarFill').style.width = '80%';
 
       const data = await res.json();
 
       if (!res.ok) {
         setStep('step-analyse', 'error');
-        alert(data.error || 'Screening mislukt.');
+        $('progressSubtitle').textContent = data.error || 'Screening mislukt. Probeer het opnieuw.';
+        $('progressSubtitle').style.color = 'var(--red)';
+        $('progressBarFill').style.width = '100%';
+        $('progressBarFill').style.background = 'var(--red)';
         submitBtn.disabled = false;
+        submitBtn.textContent = 'Screening starten';
         return;
       }
 
       setStep('step-analyse', 'done');
+      $('progressBarFill').style.width = '100%';
 
       if (isProef) {
         proefGebruikt = true;
@@ -887,10 +1008,14 @@
       laadHistorie();
     } catch (err) {
       console.error(err);
-      alert('Er ging iets mis bij de screening. Probeer het opnieuw.');
+      $('progressSubtitle').textContent = 'Er ging iets mis bij de screening. Controleer uw verbinding en probeer het opnieuw.';
+      $('progressSubtitle').style.color = 'var(--red)';
+      $('progressBarFill').style.width = '100%';
+      $('progressBarFill').style.background = 'var(--red)';
     }
 
     submitBtn.disabled = false;
+    submitBtn.textContent = 'Screening starten';
   }
 
   function setStep(id, state) {
@@ -1108,9 +1233,11 @@
 
     html += `</div>`; // close report-header
 
-    // Download button
+    // Action buttons
     html += `<div style="text-align:center;">`;
-    html += `<button class="download-btn" id="downloadPdfBtn" onclick="downloadReport()">Rapport downloaden (PDF)</button>`;
+    html += `<button class="download-btn" id="downloadPdfBtn" onclick="downloadReport()">&#8595; Rapport downloaden (PDF)</button>`;
+    html += `<br>`;
+    html += `<button class="new-screening-btn" onclick="resetScreening()">&#8634; Nieuwe screening</button>`;
     html += `</div>`;
 
     // After-proef CTA
@@ -1598,6 +1725,47 @@
       pdf.text('PROEFSCREENING \u2014 Dit rapport is niet geldig als officieel Wwft-dossier.', marginL + 4, discY);
     }
   }
+
+  // ─── NIEUWE SCREENING ───────────────────────
+  window.resetScreening = function() {
+    // Reset form
+    $('naam').value = '';
+    $('geboortedatum').value = '';
+    $('locatie').value = '';
+    $('land').value = 'Nederland';
+    $('type').value = 'natuurlijk_persoon';
+    $('kvkZoeken').checked = false;
+    $('hercheckAan').checked = false;
+    $('hercheckOpties').style.display = 'none';
+    updateKvkMonitoringVisibility();
+
+    // Reset progress
+    progressPanel.classList.remove('visible');
+    $('progressBarFill').style.width = '0%';
+    $('progressBarFill').style.background = 'var(--gold)';
+    $('progressSubtitle').textContent = 'Even geduld, dit duurt meestal 15\u201330 seconden.';
+    $('progressSubtitle').style.color = '';
+    // Reset step icons
+    ['step-credit','step-google','step-nieuws','step-sancties','step-rechtspraak','step-analyse'].forEach(id => {
+      const el = $(id);
+      el.className = '';
+      const existing = el.querySelector('.spinner') || el.querySelector('.step-icon');
+      if (existing) {
+        const ic = document.createElement('span');
+        ic.className = 'step-icon';
+        existing.replaceWith(ic);
+      }
+    });
+
+    // Hide results, show form
+    resultsPanel.classList.remove('visible');
+    resultsPanel.innerHTML = '';
+    watermark.style.display = 'none';
+
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => $('naam').focus(), 400);
+  };
 
   // ─── SANCTIES FALSE POSITIVE ────────────────
   window.toggleSanctieDetails = function(id) {

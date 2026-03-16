@@ -51,6 +51,7 @@
       font-size: 14px;
     }
     nav a.back:hover { color: #fff; }
+    nav a.back { transition: color 0.2s; }
     .content {
       max-width: 800px;
       margin: 0 auto;
@@ -81,7 +82,9 @@
       border-radius: var(--radius);
       padding: 24px;
       margin-bottom: 20px;
+      transition: transform 0.2s, box-shadow 0.2s;
     }
+    .card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.04); }
     .card h3 {
       font-size: 16px;
       color: var(--navy);

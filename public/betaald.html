@@ -34,6 +34,9 @@
       max-width: 520px;
       text-align: center;
     }
+    @keyframes checkPop { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.15); } 100% { transform: scale(1); opacity: 1; } }
+    @keyframes cardFade { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+    .card { animation: cardFade 0.5s ease; }
     .checkmark {
       width: 64px;
       height: 64px;
@@ -45,6 +48,7 @@
       margin-bottom: 24px;
       font-size: 28px;
       color: var(--gold);
+      animation: checkPop 0.5s ease 0.2s both;
     }
     h1 {
       font-size: 24px;
@@ -79,7 +83,8 @@
       margin-top: 20px;
       transition: background 0.2s;
     }
-    .cta:hover { background: #d4b85f; }
+    .cta:hover { background: #d4b85f; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(201,168,76,0.3); }
+    .cta:active { transform: translateY(0); }
     .logo {
       font-size: 18px;
       font-weight: bold;
@@ -103,6 +108,21 @@
     </div>
     <p>Zodra u de code heeft ontvangen, kunt u deze invoeren in de screener om te starten.</p>
     <a href="/screener" class="cta">Naar de screener</a>
+    <p style="margin-top:16px; font-size:13px; color:var(--text-light);" id="redirectMsg">U wordt automatisch doorgestuurd over <span id="countdown">30</span> seconden.</p>
   </div>
+<script>
+(function() {
+  let sec = 30;
+  const el = document.getElementById('countdown');
+  const timer = setInterval(() => {
+    sec--;
+    el.textContent = sec;
+    if (sec <= 0) {
+      clearInterval(timer);
+      window.location.href = '/screener';
+    }
+  }, 1000);
+})();
+</script>
 </body>
 </html>

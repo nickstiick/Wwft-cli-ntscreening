@@ -28,6 +28,7 @@
     }
 
     /* Navigation */
+    html { scroll-behavior: smooth; }
     nav {
       background: var(--navy);
       padding: 16px 0;
@@ -51,6 +52,11 @@
       text-transform: uppercase;
     }
     .logo span { color: var(--gold); }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 0;
+    }
     nav a {
       color: rgba(255,255,255,0.8);
       text-decoration: none;
@@ -59,6 +65,15 @@
       transition: color 0.2s;
     }
     nav a:hover { color: #fff; }
+    .mobile-toggle {
+      display: none;
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 24px;
+      cursor: pointer;
+      padding: 4px;
+    }
 
     /* Hero */
     .hero {
@@ -88,14 +103,15 @@
       display: inline-block;
       background: var(--gold);
       color: var(--navy);
-      padding: 14px 36px;
+      padding: 16px 40px;
       border-radius: var(--radius);
-      font-size: 16px;
+      font-size: 17px;
       font-weight: bold;
       text-decoration: none;
-      transition: background 0.2s;
+      transition: all 0.2s;
     }
-    .hero-cta:hover { background: var(--gold-light); }
+    .hero-cta:hover { background: var(--gold-light); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(201,168,76,0.3); }
+    .hero-cta:active { transform: translateY(0); }
     .hero-sub {
       font-size: 14px;
       color: rgba(255,255,255,0.5);
@@ -119,7 +135,9 @@
       border-radius: var(--radius);
       padding: 32px;
       text-align: center;
+      transition: transform 0.2s, box-shadow 0.2s;
     }
+    .feature-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.06); }
     .feature-icon {
       font-size: 32px;
       margin-bottom: 16px;
@@ -203,9 +221,9 @@
       border-radius: var(--radius);
       padding: 36px 28px;
       position: relative;
-      transition: border-color 0.2s;
+      transition: all 0.2s;
     }
-    .plan:hover { border-color: var(--gold); }
+    .plan:hover { border-color: var(--gold); transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.06); }
     .plan.featured {
       border-color: var(--navy);
     }
@@ -284,10 +302,12 @@
     .plan-btn:hover, .plan.featured .plan-btn {
       background: var(--navy);
       color: #fff;
+      transform: translateY(-1px);
     }
     .plan.featured .plan-btn:hover {
       background: var(--navy-light);
     }
+    .plan-btn:active { transform: translateY(0); }
 
     /* Checkout modal */
     .modal-overlay {
@@ -295,11 +315,13 @@
       position: fixed;
       inset: 0;
       background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(4px);
       z-index: 200;
       align-items: center;
       justify-content: center;
     }
     .modal-overlay.active { display: flex; }
+    @keyframes modalIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
     .modal {
       background: #fff;
       border-radius: var(--radius);
@@ -307,6 +329,7 @@
       max-width: 420px;
       width: 90%;
       position: relative;
+      animation: modalIn 0.25s ease;
     }
     .modal h3 {
       color: var(--navy);
@@ -331,10 +354,12 @@
       font-family: inherit;
       font-size: 15px;
       margin-bottom: 20px;
+      transition: border-color 0.2s, box-shadow 0.2s;
     }
     .modal input:focus {
       outline: none;
       border-color: var(--navy);
+      box-shadow: 0 0 0 3px rgba(26,26,46,0.08);
     }
     .modal-submit {
       width: 100%;
@@ -409,7 +434,8 @@
       text-decoration: none;
       transition: background 0.2s;
     }
-    .try-free a:hover { background: var(--gold-light); }
+    .try-free a:hover { background: var(--gold-light); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(201,168,76,0.3); }
+    .try-free a:active { transform: translateY(0); }
 
     /* Footer */
     footer {
@@ -429,7 +455,26 @@
       .hero { padding: 60px 20px 80px; }
       .plan { padding: 28px 20px; }
       .modal { padding: 28px 20px; }
-      nav a { display: none; }
+      .mobile-toggle { display: block; }
+      .nav-links {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: var(--navy);
+        flex-direction: column;
+        padding: 16px 24px;
+        border-top: 1px solid rgba(255,255,255,0.1);
+      }
+      .nav-links.open { display: flex; }
+      .nav-links a {
+        margin-left: 0;
+        padding: 10px 0;
+        font-size: 16px;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+      }
+      .nav-links a:last-child { border-bottom: none; }
     }
   </style>
 </head>
@@ -438,7 +483,8 @@
 <nav>
   <div class="nav-inner">
     <div class="logo">Dossier<span>.</span></div>
-    <div>
+    <button class="mobile-toggle" id="mobileToggle" aria-label="Menu">&#9776;</button>
+    <div class="nav-links" id="navLinks">
       <a href="#hoe-werkt-het">Hoe werkt het</a>
       <a href="#prijzen">Prijzen</a>
       <a href="/screener">Screener openen</a>
@@ -574,6 +620,32 @@
 
 <script>
 (function() {
+  // Mobile menu
+  const mobileToggle = document.getElementById('mobileToggle');
+  const navLinks = document.getElementById('navLinks');
+  mobileToggle.addEventListener('click', () => {
+    navLinks.classList.toggle('open');
+    mobileToggle.textContent = navLinks.classList.contains('open') ? '\u2715' : '\u2630';
+  });
+  // Close on link click
+  navLinks.querySelectorAll('a').forEach(a => {
+    a.addEventListener('click', () => {
+      navLinks.classList.remove('open');
+      mobileToggle.textContent = '\u2630';
+    });
+  });
+
+  // Smooth scroll
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', (e) => {
+      const target = document.querySelector(a.getAttribute('href'));
+      if (target) {
+        e.preventDefault();
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+
   const modal = document.getElementById('checkoutModal');
   const modalTitle = document.getElementById('modalTitle');
   const modalPrice = document.getElementById('modalPrice');
