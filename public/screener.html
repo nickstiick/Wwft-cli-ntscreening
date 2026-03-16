@@ -602,11 +602,11 @@
         <div class="field-error" id="naamError">Vul de naam in van de persoon of organisatie die u wilt screenen.</div>
       </div>
       <div class="form-group">
-        <label for="geboortedatum">Geboortedatum <span class="help-tip" data-tip="Optioneel — helpt bij nauwkeurigere resultaten">?</span></label>
+        <label for="geboortedatum">Geboortedatum <span class="help-tip" data-tip="Niet verplicht, maar helpt om de juiste persoon te vinden">?</span></label>
         <input type="date" id="geboortedatum">
       </div>
       <div class="form-group">
-        <label for="locatie">Woonplaats / vestigingsplaats <span class="help-tip" data-tip="Optioneel — verfijnt zoekresultaten">?</span></label>
+        <label for="locatie">Woonplaats of vestigingsplaats <span class="help-tip" data-tip="Niet verplicht, maar verfijnt de zoekresultaten">?</span></label>
         <input type="text" id="locatie" placeholder="Amsterdam">
       </div>
       <div class="form-group">
@@ -614,11 +614,11 @@
         <input type="text" id="land" placeholder="Nederland" value="Nederland">
       </div>
       <div class="form-group">
-        <label for="type">Type subject</label>
+        <label for="type">Wat screent u? <span class="help-tip" data-tip="Persoon = particulier, bijv. koper of huurder. Bedrijf = B.V., stichting, etc. UBO = uiteindelijk belanghebbende van een bedrijf.">?</span></label>
         <select id="type">
-          <option value="natuurlijk_persoon">Natuurlijk persoon</option>
-          <option value="rechtspersoon">Rechtspersoon</option>
-          <option value="ubo">UBO</option>
+          <option value="natuurlijk_persoon">Persoon</option>
+          <option value="rechtspersoon">Bedrijf / organisatie</option>
+          <option value="ubo">UBO (uiteindelijk belanghebbende)</option>
         </select>
       </div>
       <div class="form-group">
@@ -629,16 +629,15 @@
         </div>
         <div class="checkbox-group" style="margin-top:6px;">
           <input type="checkbox" id="hercheckAan">
-          <label for="hercheckAan">Hercheck inplannen</label>
+          <label for="hercheckAan">Herinnering voor herscreening <span class="help-tip" data-tip="U krijgt een e-mail wanneer het tijd is om deze cliënt opnieuw te screenen">?</span></label>
         </div>
         <div class="checkbox-group" style="margin-top:6px; display:none;" id="kvkMonitoringGroup">
           <input type="checkbox" id="kvkMonitoring">
-          <label for="kvkMonitoring">KVK wijzigingen monitoren</label>
-          <span style="font-size:11px; color:#999; display:block; margin-top:2px;">Ontvang een melding bij wijzigingen in het Handelsregister</span>
+          <label for="kvkMonitoring">Meld wijzigingen KvK <span class="help-tip" data-tip="U krijgt een melding als er iets verandert bij dit bedrijf in het Handelsregister">?</span></label>
         </div>
       </div>
       <div class="form-group" id="hercheckOpties" style="display:none;">
-        <label for="hercheckInterval">Hercheck interval</label>
+        <label for="hercheckInterval">Herinnering na</label>
         <select id="hercheckInterval">
           <option value="12">12 maanden</option>
           <option value="6">6 maanden</option>
@@ -649,22 +648,22 @@
 
       <!-- Whitelabel -->
       <div class="form-group full whitelabel-section">
-        <div class="whitelabel-toggle" id="whitelabelToggle">Rapport personaliseren</div>
+        <div class="whitelabel-toggle" id="whitelabelToggle">Rapport op uw kantoornaam</div>
         <div class="whitelabel-fields form-grid" id="whitelabelFields">
           <div class="form-group">
             <label for="kantoorNaam">Kantoornaam</label>
-            <input type="text" id="kantoorNaam" placeholder="Hofman & Partners Notarissen">
+            <input type="text" id="kantoorNaam" placeholder="Uw kantoor- of bedrijfsnaam">
           </div>
           <div class="form-group">
             <label for="medewerker">Medewerker</label>
-            <input type="text" id="medewerker" placeholder="mr. J. Hofman">
+            <input type="text" id="medewerker" placeholder="Naam medewerker">
           </div>
           <div class="form-group">
             <label for="dossiernummer">Dossiernummer</label>
             <input type="text" id="dossiernummer" placeholder="2026-0042">
           </div>
           <div class="form-group">
-            <label for="kantoorKleur">Kleur</label>
+            <label for="kantoorKleur">Huisstijlkleur</label>
             <input type="color" id="kantoorKleur" value="#1a1a2e">
           </div>
           <div class="form-group full">
@@ -685,12 +684,12 @@
     <div class="progress-bar-track"><div class="progress-bar-fill" id="progressBarFill"></div></div>
     <ul class="progress-steps" id="progressSteps">
       <li id="step-credit"><span class="step-icon"></span> Credit controleren</li>
-      <li id="step-google"><span class="step-icon"></span> Google doorzoeken</li>
+      <li id="step-google"><span class="step-icon"></span> Internet doorzoeken</li>
       <li id="step-nieuws"><span class="step-icon"></span> Nieuwsberichten ophalen</li>
       <li id="step-sancties"><span class="step-icon"></span> Sanctielijsten controleren</li>
-      <li id="step-rechtspraak"><span class="step-icon"></span> Rechtspraak.nl doorzoeken</li>
+      <li id="step-rechtspraak"><span class="step-icon"></span> Rechtspraak doorzoeken</li>
       <li id="step-kvk" style="display:none;"><span class="step-icon"></span> KvK Handelsregister doorzoeken</li>
-      <li id="step-analyse"><span class="step-icon"></span> AI-analyse uitvoeren</li>
+      <li id="step-analyse"><span class="step-icon"></span> Analyse uitvoeren</li>
     </ul>
   </div>
 
@@ -1126,7 +1125,7 @@
     // Bevindingen
     if (a.bevindingen && a.bevindingen.length > 0) {
       html += `<div class="result-section">`;
-      html += `<h3>Risico-indicatoren ter beoordeling <span class="section-count">${a.bevindingen.length}</span></h3>`;
+      html += `<h3>Bevindingen <span class="section-count">${a.bevindingen.length}</span></h3>`;
       a.bevindingen.forEach(b => {
         html += `<div class="bevinding ${b.ernst || 'grijs'}">`;
         html += `<div class="bevinding-text">${escapeHtml(b.beschrijving)}</div>`;
@@ -1139,7 +1138,7 @@
     // Risico-uitleg
     if (a.risico_uitleg) {
       html += `<div class="result-section">`;
-      html += `<h3>Toelichting risicobeoordeling</h3>`;
+      html += `<h3>Toelichting</h3>`;
       html += `<div class="samenvatting-text">${escapeHtml(a.risico_uitleg)}</div>`;
       html += `</div>`;
     }
@@ -1156,7 +1155,7 @@
         // Details expand
         html += `<div style="margin-top:8px;">`;
         html += `<button onclick="toggleSanctieDetails('${sid}-details')" style="font-size:12px; font-family:sans-serif; background:none; border:1px solid var(--border); padding:4px 10px; border-radius:4px; cursor:pointer; color:var(--navy);">Details bekijken &rarr;</button>`;
-        html += ` <button onclick="markFalsePositive('${sid}')" style="font-size:12px; font-family:sans-serif; background:none; border:1px solid var(--orange); padding:4px 10px; border-radius:4px; cursor:pointer; color:var(--orange);">False positive — dit is niet mijn cli&euml;nt</button>`;
+        html += ` <button onclick="markFalsePositive('${sid}')" style="font-size:12px; font-family:sans-serif; background:none; border:1px solid var(--orange); padding:4px 10px; border-radius:4px; cursor:pointer; color:var(--orange);">Geen match — dit is niet mijn cli&euml;nt</button>`;
         html += `</div>`;
         // Details panel (hidden)
         html += `<div id="${sid}-details" style="display:none; margin-top:8px; padding:10px; background:rgba(255,255,255,0.6); border-radius:4px; font-size:13px;">`;
@@ -1168,8 +1167,8 @@
         html += `</div>`;
         // False positive note (hidden)
         html += `<div id="${sid}-fp" style="display:none; margin-top:8px;">`;
-        html += `<textarea id="${sid}-fp-reden" placeholder="Reden waarom dit een false positive is..." style="width:100%; padding:8px; border:1px solid var(--border); border-radius:4px; font-family:inherit; font-size:13px; resize:vertical; min-height:60px;"></textarea>`;
-        html += `<button onclick="confirmFalsePositive('${sid}')" style="margin-top:6px; font-size:12px; font-family:sans-serif; background:var(--navy); color:#fff; border:none; padding:6px 14px; border-radius:4px; cursor:pointer;">Bevestig false positive</button>`;
+        html += `<textarea id="${sid}-fp-reden" placeholder="Waarom is deze treffer niet van toepassing op uw cliënt?" style="width:100%; padding:8px; border:1px solid var(--border); border-radius:4px; font-family:inherit; font-size:13px; resize:vertical; min-height:60px;"></textarea>`;
+        html += `<button onclick="confirmFalsePositive('${sid}')" style="margin-top:6px; font-size:12px; font-family:sans-serif; background:var(--navy); color:#fff; border:none; padding:6px 14px; border-radius:4px; cursor:pointer;">Bevestigen</button>`;
         html += `</div>`;
         html += `</div>`;
       });
@@ -1323,7 +1322,7 @@
 
     // Disclaimer
     html += `<div class="disclaimer">`;
-    html += `<strong>Disclaimer:</strong> Dit rapport is een hulpmiddel bij de uitvoering van het cliëntonderzoek als bedoeld in de Wwft. Het vervangt niet de wettelijke verplichting van de verantwoordelijke instelling. De verantwoordelijke instelling blijft te allen tijde zelf verantwoordelijk voor de naleving van de Wwft en de beoordeling van de risico's.`;
+    html += `<strong>Disclaimer:</strong> Dit rapport ondersteunt uw Wwft-cliëntonderzoek. Het vervangt niet uw eigen beoordelingsplicht. U blijft zelf verantwoordelijk voor de naleving van de Wwft.`;
     if (isProef) {
       html += `<br><br><strong style="color:var(--red);">PROEFSCREENING — Dit rapport is niet geldig als officieel Wwft-dossier.</strong>`;
     }
@@ -1333,7 +1332,7 @@
 
     // Action buttons
     html += `<div style="text-align:center;">`;
-    html += `<button class="download-btn" id="downloadPdfBtn" onclick="downloadReport()">&#8595; Rapport downloaden (PDF)</button>`;
+    html += `<button class="download-btn" id="downloadPdfBtn" onclick="downloadReport()">&#8595; Download rapport (PDF)</button>`;
     html += `<br>`;
     html += `<button class="new-screening-btn" onclick="resetScreening()">&#8634; Nieuwe screening</button>`;
     html += `</div>`;
@@ -1341,7 +1340,7 @@
     // After-proef CTA
     if (isProef) {
       html += `<div style="text-align:center; margin-top:20px; padding:20px; background:var(--white); border:1px solid var(--border); border-radius:var(--radius);">`;
-      html += `<p style="margin-bottom:12px; font-size:15px;">Tevreden? Koop een bundel voor volledige rapporten zonder watermerk.</p>`;
+      html += `<p style="margin-bottom:12px; font-size:15px;">Tevreden? Koop een bundel voor officiële rapporten zonder watermerk.</p>`;
       html += `<a href="/#prijzen" style="display:inline-block; background:var(--gold); color:var(--navy); padding:10px 24px; border-radius:var(--radius); font-weight:bold; text-decoration:none;">Bundel kopen</a>`;
       html += `</div>`;
     }
@@ -1379,7 +1378,7 @@
     }
 
     btn.disabled = false;
-    btn.textContent = 'Rapport downloaden (PDF)';
+    btn.textContent = 'Download rapport (PDF)';
   };
 
   function loadScript(src) {
@@ -1605,7 +1604,7 @@
 
     // ═══ BEVINDINGEN ═══
     if (a.bevindingen?.length > 0) {
-      sectionTitle('Risico-indicatoren', a.bevindingen.length);
+      sectionTitle('Bevindingen', a.bevindingen.length);
       const ernstRgb = { groen: [39,174,96], oranje: [230,126,34], rood: [192,57,43], grijs: [149,165,166] };
       a.bevindingen.forEach(b => {
         const bk = ernstRgb[b.ernst] || [149,165,166];
@@ -1622,7 +1621,7 @@
 
     // ═══ RISICO-UITLEG ═══
     if (a.risico_uitleg) {
-      sectionTitle('Toelichting risicobeoordeling');
+      sectionTitle('Toelichting');
       writeText(a.risico_uitleg, marginL, 10, [51, 51, 51]);
     }
 
@@ -1865,7 +1864,7 @@
     pdf.setFillColor(248, 247, 244);
     pdf.setDrawColor(224, 221, 213);
     pdf.setLineWidth(0.3);
-    const disclaimerText = 'Disclaimer: Dit rapport is een hulpmiddel bij de uitvoering van het cli\u00ebntonderzoek als bedoeld in de Wwft. Het vervangt niet de wettelijke verplichting van de verantwoordelijke instelling. De verantwoordelijke instelling blijft te allen tijde zelf verantwoordelijk voor de naleving van de Wwft en de beoordeling van de risico\u2019s.';
+    const disclaimerText = 'Disclaimer: Dit rapport ondersteunt uw Wwft-cli\u00ebntonderzoek. Het vervangt niet uw eigen beoordelingsplicht. U blijft zelf verantwoordelijk voor de naleving van de Wwft.';
     pdf.setFontSize(8);
     const discLines = pdf.splitTextToSize(disclaimerText, contentW - 8);
     const discH = discLines.length * 3.5 + 6;
@@ -1944,7 +1943,7 @@
     const datum = new Date().toLocaleDateString('nl-NL');
 
     if (!reden) {
-      alert('Vul een reden in voor de false positive beoordeling.');
+      alert('Vul een reden in waarom deze treffer niet van toepassing is.');
       return;
     }
 
@@ -1954,7 +1953,7 @@
 
     // Verberg knoppen, toon bevestiging
     const fpPanel = document.getElementById(sid + '-fp');
-    fpPanel.innerHTML = `<div style="font-size:12px; font-family:sans-serif; color:var(--grey); font-style:italic; margin-top:4px;">Treffer beoordeeld als false positive door ${escapeHtml(medewerkerNaam)} op ${datum}. Reden: ${escapeHtml(reden)}</div>`;
+    fpPanel.innerHTML = `<div style="font-size:12px; font-family:sans-serif; color:var(--grey); font-style:italic; margin-top:4px;">Beoordeeld als geen match door ${escapeHtml(medewerkerNaam)} op ${datum}. Reden: ${escapeHtml(reden)}</div>`;
     fpPanel.style.display = 'block';
 
     // Verberg originele knoppen
