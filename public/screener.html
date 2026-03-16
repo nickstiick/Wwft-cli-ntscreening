@@ -614,11 +614,11 @@
         <input type="text" id="land" placeholder="Nederland" value="Nederland">
       </div>
       <div class="form-group">
-        <label for="type">Wat screent u? <span class="help-tip" data-tip="Persoon = particulier, bijv. koper of huurder. Bedrijf = B.V., stichting, etc. UBO = uiteindelijk belanghebbende van een bedrijf.">?</span></label>
+        <label for="type">Type cliënt</label>
         <select id="type">
-          <option value="natuurlijk_persoon">Persoon</option>
-          <option value="rechtspersoon">Bedrijf / organisatie</option>
-          <option value="ubo">UBO (uiteindelijk belanghebbende)</option>
+          <option value="natuurlijk_persoon">Natuurlijk persoon</option>
+          <option value="rechtspersoon">Rechtspersoon</option>
+          <option value="ubo">UBO</option>
         </select>
       </div>
       <div class="form-group">
@@ -629,15 +629,15 @@
         </div>
         <div class="checkbox-group" style="margin-top:6px;">
           <input type="checkbox" id="hercheckAan">
-          <label for="hercheckAan">Herinnering voor herscreening <span class="help-tip" data-tip="U krijgt een e-mail wanneer het tijd is om deze cliënt opnieuw te screenen">?</span></label>
+          <label for="hercheckAan">Hercheck inplannen <span class="help-tip" data-tip="U ontvangt een e-mail wanneer deze cliënt opnieuw gescreend dient te worden">?</span></label>
         </div>
         <div class="checkbox-group" style="margin-top:6px; display:none;" id="kvkMonitoringGroup">
           <input type="checkbox" id="kvkMonitoring">
-          <label for="kvkMonitoring">Meld wijzigingen KvK <span class="help-tip" data-tip="U krijgt een melding als er iets verandert bij dit bedrijf in het Handelsregister">?</span></label>
+          <label for="kvkMonitoring">KvK-monitoring <span class="help-tip" data-tip="Ontvang een melding bij wijzigingen in het Handelsregister voor deze rechtspersoon">?</span></label>
         </div>
       </div>
       <div class="form-group" id="hercheckOpties" style="display:none;">
-        <label for="hercheckInterval">Herinnering na</label>
+        <label for="hercheckInterval">Hercheck interval</label>
         <select id="hercheckInterval">
           <option value="12">12 maanden</option>
           <option value="6">6 maanden</option>
@@ -1155,7 +1155,7 @@
         // Details expand
         html += `<div style="margin-top:8px;">`;
         html += `<button onclick="toggleSanctieDetails('${sid}-details')" style="font-size:12px; font-family:sans-serif; background:none; border:1px solid var(--border); padding:4px 10px; border-radius:4px; cursor:pointer; color:var(--navy);">Details bekijken &rarr;</button>`;
-        html += ` <button onclick="markFalsePositive('${sid}')" style="font-size:12px; font-family:sans-serif; background:none; border:1px solid var(--orange); padding:4px 10px; border-radius:4px; cursor:pointer; color:var(--orange);">Geen match — dit is niet mijn cli&euml;nt</button>`;
+        html += ` <button onclick="markFalsePositive('${sid}')" style="font-size:12px; font-family:sans-serif; background:none; border:1px solid var(--orange); padding:4px 10px; border-radius:4px; cursor:pointer; color:var(--orange);">Niet van toepassing</button>`;
         html += `</div>`;
         // Details panel (hidden)
         html += `<div id="${sid}-details" style="display:none; margin-top:8px; padding:10px; background:rgba(255,255,255,0.6); border-radius:4px; font-size:13px;">`;
@@ -1167,7 +1167,7 @@
         html += `</div>`;
         // False positive note (hidden)
         html += `<div id="${sid}-fp" style="display:none; margin-top:8px;">`;
-        html += `<textarea id="${sid}-fp-reden" placeholder="Waarom is deze treffer niet van toepassing op uw cliënt?" style="width:100%; padding:8px; border:1px solid var(--border); border-radius:4px; font-family:inherit; font-size:13px; resize:vertical; min-height:60px;"></textarea>`;
+        html += `<textarea id="${sid}-fp-reden" placeholder="Toelichting waarom deze treffer niet van toepassing is op uw cliënt" style="width:100%; padding:8px; border:1px solid var(--border); border-radius:4px; font-family:inherit; font-size:13px; resize:vertical; min-height:60px;"></textarea>`;
         html += `<button onclick="confirmFalsePositive('${sid}')" style="margin-top:6px; font-size:12px; font-family:sans-serif; background:var(--navy); color:#fff; border:none; padding:6px 14px; border-radius:4px; cursor:pointer;">Bevestigen</button>`;
         html += `</div>`;
         html += `</div>`;
@@ -1322,7 +1322,7 @@
 
     // Disclaimer
     html += `<div class="disclaimer">`;
-    html += `<strong>Disclaimer:</strong> Dit rapport ondersteunt uw Wwft-cliëntonderzoek. Het vervangt niet uw eigen beoordelingsplicht. U blijft zelf verantwoordelijk voor de naleving van de Wwft.`;
+    html += `<strong>Disclaimer:</strong> Dit rapport is een hulpmiddel bij het cliëntonderzoek op grond van de Wwft. De Wwft-plichtige instelling blijft zelf verantwoordelijk voor de beoordeling en de naleving van de Wwft.`;
     if (isProef) {
       html += `<br><br><strong style="color:var(--red);">PROEFSCREENING — Dit rapport is niet geldig als officieel Wwft-dossier.</strong>`;
     }
@@ -1864,7 +1864,7 @@
     pdf.setFillColor(248, 247, 244);
     pdf.setDrawColor(224, 221, 213);
     pdf.setLineWidth(0.3);
-    const disclaimerText = 'Disclaimer: Dit rapport ondersteunt uw Wwft-cli\u00ebntonderzoek. Het vervangt niet uw eigen beoordelingsplicht. U blijft zelf verantwoordelijk voor de naleving van de Wwft.';
+    const disclaimerText = 'Disclaimer: Dit rapport is een hulpmiddel bij het cli\u00ebntonderzoek op grond van de Wwft. De Wwft-plichtige instelling blijft zelf verantwoordelijk voor de beoordeling en de naleving van de Wwft.';
     pdf.setFontSize(8);
     const discLines = pdf.splitTextToSize(disclaimerText, contentW - 8);
     const discH = discLines.length * 3.5 + 6;
@@ -1953,7 +1953,7 @@
 
     // Verberg knoppen, toon bevestiging
     const fpPanel = document.getElementById(sid + '-fp');
-    fpPanel.innerHTML = `<div style="font-size:12px; font-family:sans-serif; color:var(--grey); font-style:italic; margin-top:4px;">Beoordeeld als geen match door ${escapeHtml(medewerkerNaam)} op ${datum}. Reden: ${escapeHtml(reden)}</div>`;
+    fpPanel.innerHTML = `<div style="font-size:12px; font-family:sans-serif; color:var(--grey); font-style:italic; margin-top:4px;">Beoordeeld als niet van toepassing door ${escapeHtml(medewerkerNaam)} op ${datum}. Toelichting: ${escapeHtml(reden)}</div>`;
     fpPanel.style.display = 'block';
 
     // Verberg originele knoppen
