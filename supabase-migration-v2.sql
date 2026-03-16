@@ -59,6 +59,7 @@ CREATE TABLE screenings (
   type TEXT DEFAULT 'natuurlijk_persoon',
   locatie TEXT,
   land TEXT DEFAULT 'Nederland',
+  kvk_nummer TEXT,
   -- Resultaten
   risico_niveau TEXT,
   risico_score INTEGER,
@@ -79,9 +80,40 @@ CREATE TABLE screenings (
 
 CREATE INDEX idx_screenings_tenant ON screenings(tenant_id);
 CREATE INDEX idx_screenings_naam ON screenings(naam);
+CREATE INDEX idx_screenings_kvk ON screenings(kvk_nummer) WHERE kvk_nummer IS NOT NULL;
 CREATE INDEX idx_screenings_hercheck ON screenings(hercheck_datum) WHERE hercheck_actief = true;
 CREATE INDEX idx_screenings_aangemaakt ON screenings(aangemaakt_op DESC);
 
 ALTER TABLE screenings ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Service role full access" ON screenings
+  FOR ALL USING (true) WITH CHECK (true);
+
+-- ─── KVK MONITORING (voorbereiding KVK Mutatieservice) ──
+-- Houdt bij welke KVK-nummers gemonitord worden voor wijzigingen.
+-- Bij een mutatie wordt automatisch een hercheck getriggerd.
+CREATE TABLE kvk_monitoring (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  tenant_id UUID NOT NULL REFERENCES tenants(id),
+  kvk_nummer TEXT NOT NULL,
+  bedrijfsnaam TEXT,
+  -- Welke mutatie-types monitoren
+  monitor_bestuurswisseling BOOLEAN DEFAULT true,
+  monitor_adreswijziging BOOLEAN DEFAULT true,
+  monitor_sbi_wijziging BOOLEAN DEFAULT true,
+  monitor_faillissement BOOLEAN DEFAULT true,
+  -- Laatste bekende staat (voor vergelijking)
+  laatste_check TIMESTAMPTZ,
+  laatste_mutatie JSONB,
+  -- Koppeling naar meest recente screening
+  laatste_screening_id UUID REFERENCES screenings(id),
+  -- Meta
+  actief BOOLEAN DEFAULT true,
+  aangemaakt_op TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX idx_kvk_monitoring_unique ON kvk_monitoring(tenant_id, kvk_nummer) WHERE actief = true;
+CREATE INDEX idx_kvk_monitoring_kvk ON kvk_monitoring(kvk_nummer) WHERE actief = true;
+
+ALTER TABLE kvk_monitoring ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Service role full access" ON kvk_monitoring
   FOR ALL USING (true) WITH CHECK (true);

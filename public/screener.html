@@ -529,6 +529,11 @@
           <input type="checkbox" id="hercheckAan">
           <label for="hercheckAan">Hercheck inplannen</label>
         </div>
+        <div class="checkbox-group" style="margin-top:6px; display:none;" id="kvkMonitoringGroup">
+          <input type="checkbox" id="kvkMonitoring">
+          <label for="kvkMonitoring">KVK wijzigingen monitoren</label>
+          <span style="font-size:11px; color:#999; display:block; margin-top:2px;">Ontvang een melding bij wijzigingen in het Handelsregister</span>
+        </div>
       </div>
       <div class="form-group" id="hercheckOpties" style="display:none;">
         <label for="hercheckInterval">Hercheck interval</label>
@@ -697,15 +702,24 @@
   }
 
   // ─── AUTO KVK BIJ RECHTSPERSOON/UBO ─────────────────────
+  function updateKvkMonitoringVisibility() {
+    const isRechtspersoon = $('type').value === 'rechtspersoon' || $('type').value === 'ubo';
+    const kvkChecked = $('kvkZoeken').checked;
+    $('kvkMonitoringGroup').style.display = (isRechtspersoon && kvkChecked) ? 'block' : 'none';
+    if (!isRechtspersoon || !kvkChecked) $('kvkMonitoring').checked = false;
+  }
   $('type').addEventListener('change', function() {
     if (this.value === 'rechtspersoon' || this.value === 'ubo') {
       $('kvkZoeken').checked = true;
     }
+    updateKvkMonitoringVisibility();
   });
+  $('kvkZoeken').addEventListener('change', updateKvkMonitoringVisibility);
   // Check bij pagina-load
   if ($('type').value === 'rechtspersoon' || $('type').value === 'ubo') {
     $('kvkZoeken').checked = true;
   }
+  updateKvkMonitoringVisibility();
 
   // ─── HERCHECK TOGGLE ─────────────────────
   $('hercheckAan').addEventListener('change', function() {
@@ -831,7 +845,11 @@
       // Hercheck meesturen als aangevinkt
       if ($('hercheckAan').checked) {
         body.hercheck = $('hercheckInterval').value;
-        // E-mail ophalen via activatiecode record (al bekend op server)
+      }
+
+      // KVK monitoring meesturen als aangevinkt
+      if ($('kvkMonitoring').checked) {
+        body.kvkMonitoring = true;
       }
 
       const res = await fetch('/api/screen', {

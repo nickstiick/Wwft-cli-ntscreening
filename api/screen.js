@@ -9,7 +9,7 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { naam, geboortedatum, type, locatie, land, kvkZoeken, activatiecode, medewerker, dossiernummer, hercheck, hercheckEmail } = req.body;
+  const { naam, geboortedatum, type, locatie, land, kvkZoeken, activatiecode, medewerker, dossiernummer, hercheck, hercheckEmail, kvkMonitoring } = req.body;
 
   if (!naam) {
     return res.status(400).json({ error: 'Naam is verplicht.' });
@@ -147,6 +147,9 @@ module.exports = async function handler(req, res) {
 
     const tijdstip = new Date().toISOString();
 
+    // Extract KVK-nummer uit resultaten (eerste hit)
+    const kvkNummer = resultaten.kvk?.resultaten?.[0]?.kvkNummer || null;
+
     // Sla screening op in database (async, geen blokkade)
     const screeningRecord = {
       naam,
@@ -154,6 +157,7 @@ module.exports = async function handler(req, res) {
       type: type || 'natuurlijk_persoon',
       locatie: locatie || null,
       land: land || 'Nederland',
+      kvk_nummer: kvkNummer,
       risico_niveau: analyse.risico_niveau || null,
       risico_score: analyse.risico_score >= 0 ? analyse.risico_score : null,
       samenvatting: analyse.samenvatting || null,
@@ -203,6 +207,22 @@ module.exports = async function handler(req, res) {
         .select('id')
         .single();
       screeningId = saved?.id;
+
+      // KVK Monitoring activeren als gevraagd + KVK-nummer beschikbaar + tenant bekend
+      if (kvkMonitoring && kvkNummer && screeningRecord.tenant_id) {
+        await supabase
+          .from('kvk_monitoring')
+          .upsert({
+            tenant_id: screeningRecord.tenant_id,
+            kvk_nummer: kvkNummer,
+            bedrijfsnaam: resultaten.kvk?.resultaten?.[0]?.naam || naam,
+            laatste_screening_id: screeningId,
+            laatste_check: tijdstip,
+            actief: true
+          }, { onConflict: 'tenant_id,kvk_nummer', ignoreDuplicates: false })
+          .then(() => {})
+          .catch(err => console.error('KVK monitoring opslaan mislukt:', err));
+      }
     } catch (saveErr) {
       console.error('Screening opslaan mislukt:', saveErr);
     }
