@@ -1347,7 +1347,7 @@
       $('step2Skip').style.display = 'none';
       $('step2Results').innerHTML = '';
       try {
-        const res = await fetch('/api/screen-step', {
+        const res = await fetch('/api/screen', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ step: 'kvk', naam: formData.naam, type: formData.type })
@@ -1412,7 +1412,7 @@
     $('step3Loading').style.display = 'block';
     $('step3Results').innerHTML = '';
     try {
-      const res = await fetch('/api/screen-step', {
+      const res = await fetch('/api/screen', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ step: 'sanctions', naam: formData.naam, geboortedatum: formData.geboortedatum, type: formData.type })
@@ -1459,7 +1459,7 @@
     $('step4Loading').style.display = 'block';
     $('step4Results').innerHTML = '';
     try {
-      const res = await fetch('/api/screen-step', {
+      const res = await fetch('/api/screen', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ step: 'search', naam: formData.naam, locatie: formData.locatie, land: formData.land })
@@ -1551,7 +1551,7 @@
     if (wizardData.yandex) resultaten.yandex = wizardData.yandex;
 
     try {
-      const res = await fetch('/api/screen-step', {
+      const res = await fetch('/api/screen', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
