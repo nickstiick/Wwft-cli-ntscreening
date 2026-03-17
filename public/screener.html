@@ -1019,7 +1019,10 @@
   </div>
 
   <!-- Herchecks -->
-  <!-- Geen hercheck-paneel: screeningdata wordt niet opgeslagen (privacy by design) -->
+  <div class="result-section" id="hercheckPanel" style="display:none; margin-top:16px;">
+    <h3>Geplande herchecks</h3>
+    <div id="hercheckContent" style="font-size:14px;"></div>
+  </div>
 
 </div>
 
@@ -1201,10 +1204,37 @@
     $('hercheckOpties').style.display = this.checked ? 'block' : 'none';
   });
 
-  // ─── LAAD GEBRUIKSOVERZICHT ─────────────────
+  // ─── LAAD HERCHECK-OVERZICHT (anoniem, alleen referentienummers) ──
   async function laadHistorie() {
-    // Geen screeningdata opgeslagen — alleen creditoverzicht
     if (!activatiecode) return;
+    try {
+      const hRes = await fetch('/api/hercheck?code=' + encodeURIComponent(activatiecode));
+      if (hRes.ok) {
+        const hData = await hRes.json();
+        if (hData.herchecks?.length > 0) {
+          const panel = $('hercheckPanel');
+          panel.style.display = 'block';
+          let html = '<table style="width:100%;border-collapse:collapse;font-size:13px;">';
+          html += '<tr style="background:var(--navy);color:#fff;"><th style="padding:6px 10px;text-align:left;">Referentie</th><th style="padding:6px 10px;text-align:left;">Risico</th><th style="padding:6px 10px;text-align:left;">Hercheck datum</th><th style="padding:6px 10px;text-align:left;">Interval</th></tr>';
+          hData.herchecks.forEach(h => {
+            const rKleur = h.risico_niveau === 'hoog' ? 'var(--red)' : h.risico_niveau === 'verhoogd' ? 'var(--orange)' : 'var(--green)';
+            const datum = h.hercheck_datum ? new Date(h.hercheck_datum).toLocaleDateString('nl-NL') : '-';
+            const isVerlopen = h.hercheck_datum && new Date(h.hercheck_datum) <= new Date();
+            html += `<tr style="border-bottom:1px solid var(--border);${isVerlopen ? 'background:#fdf0ef;' : ''}">`;
+            html += `<td style="padding:6px 10px; font-weight:bold; letter-spacing:0.5px;">${escapeHtml(h.referentie)}</td>`;
+            html += `<td style="padding:6px 10px;color:${rKleur};font-weight:bold;">${escapeHtml(h.risico_niveau || '-')}</td>`;
+            html += `<td style="padding:6px 10px;${isVerlopen ? 'color:var(--red);font-weight:bold;' : ''}">${datum}${isVerlopen ? ' — VERLOPEN' : ''}</td>`;
+            html += `<td style="padding:6px 10px;">${h.hercheck_interval_maanden || 12} mnd</td>`;
+            html += '</tr>';
+          });
+          html += '</table>';
+          html += '<div style="font-size:11px; color:var(--text-light); margin-top:8px; font-family:sans-serif;">Zoek het referentienummer op in uw dossier om te bepalen welke cli\u00ebnt herscreend moet worden.</div>';
+          $('hercheckContent').innerHTML = html;
+        }
+      }
+    } catch (e) {
+      console.error('Herchecks laden mislukt:', e);
+    }
   }
 
   // Laad historie na activatie
@@ -1695,6 +1725,7 @@
     const cg = r.clientgegevens || {};
     html += `<div style="text-align:center; font-size:13px; color:var(--text-light); margin-bottom:24px; font-family:sans-serif;">`;
     html += `Wwft Cliëntscreening — ${new Date(data.tijdstip).toLocaleString('nl-NL')}`;
+    if (data.referentie) html += `<br><strong style="font-size:14px; color:var(--navy); letter-spacing:1px;">${escapeHtml(data.referentie)}</strong>`;
     if (medewerker) html += `<br>Medewerker: ${escapeHtml(medewerker)}`;
     if (dossiernr) html += `<br>Dossiernummer: ${escapeHtml(dossiernr)}`;
     html += `<br>Subject: <strong>${escapeHtml(data.naam)}</strong>`;
@@ -2276,6 +2307,16 @@
     pdf.setTextColor(102, 102, 102);
     pdf.text(tijdstip, pageW / 2, y, { align: 'center' });
     y += 4;
+    if (d.referentie) {
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(...kleurRgb);
+      pdf.setFontSize(11);
+      pdf.text(d.referentie, pageW / 2, y, { align: 'center' });
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(102, 102, 102);
+      y += 5;
+    }
     if (medewerker) { pdf.text('Medewerker: ' + medewerker, pageW / 2, y, { align: 'center' }); y += 4; }
     if (dossiernummer) { pdf.text('Dossiernummer: ' + dossiernummer, pageW / 2, y, { align: 'center' }); y += 4; }
     pdf.setFont('helvetica', 'bold');

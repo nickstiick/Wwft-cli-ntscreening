@@ -224,7 +224,10 @@ module.exports = async function handler(req, res) {
     // Gebruik loggen (alleen teller, geen persoonsgegevens)
     logGebruik(activatiecode, req._apiKeyId, req._tenantId);
 
-    // Hercheck-advies meegeven in response (client bewaart dit zelf)
+    // Referentienummer genereren (altijd, voor in het rapport)
+    const referentie = genereerReferentie();
+
+    // Hercheck: anoniem opslaan (alleen referentienummer + datum + email)
     let hercheckAdvies = null;
     if (hercheck) {
       const risicoInterval = { hoog: 3, verhoogd: 6, laag: 12 };
@@ -232,9 +235,33 @@ module.exports = async function handler(req, res) {
       const risicoNiveau = analyse.risico_niveau || 'laag';
       const aanbevolenInterval = risicoInterval[risicoNiveau] || 12;
       hercheckAdvies = Math.min(gebruikerInterval, aanbevolenInterval);
+
+      const hercheckDatum = new Date();
+      hercheckDatum.setMonth(hercheckDatum.getMonth() + hercheckAdvies);
+
+      // Tenant opzoeken via activatiecode
+      let tenantId = req._tenantId || null;
+      if (!tenantId && activatiecode) {
+        const { data: codeRecord } = await supabase
+          .from('activatiecodes').select('tenant_id').eq('code', activatiecode.toUpperCase()).single();
+        tenantId = codeRecord?.tenant_id || null;
+      }
+
+      // Anonieme hercheck opslaan (geen naam, geen persoonsgegevens)
+      await supabase.from('herchecks').insert({
+        referentie,
+        tenant_id: tenantId,
+        activatiecode: activatiecode || null,
+        risico_niveau: analyse.risico_niveau || null,
+        hercheck_datum: hercheckDatum.toISOString().slice(0, 10),
+        hercheck_interval_maanden: hercheckAdvies,
+        hercheck_email: req.body.hercheckEmail || null,
+        actief: true
+      }).catch(err => console.error('Hercheck opslaan mislukt:', err));
     }
 
     return res.status(200).json({
+      referentie,
       naam,
       geboortedatum,
       type,
@@ -407,7 +434,10 @@ async function stepAnalyse(req, res) {
   // Gebruik loggen (alleen teller, geen persoonsgegevens)
   logGebruik(activatiecode, null, null);
 
-  // Hercheck-advies meegeven (client bewaart dit zelf)
+  // Referentienummer genereren
+  const referentie = genereerReferentie();
+
+  // Hercheck: anoniem opslaan
   let hercheckAdvies = null;
   if (hercheck) {
     const risicoInterval = { hoog: 3, verhoogd: 6, laag: 12 };
@@ -415,9 +445,30 @@ async function stepAnalyse(req, res) {
     const risicoNiveau = analyse.risico_niveau || 'laag';
     const aanbevolenInterval = risicoInterval[risicoNiveau] || 12;
     hercheckAdvies = Math.min(gebruikerInterval, aanbevolenInterval);
+
+    const hercheckDatum = new Date();
+    hercheckDatum.setMonth(hercheckDatum.getMonth() + hercheckAdvies);
+
+    let tenantId = null;
+    if (activatiecode) {
+      const { data: codeRecord } = await supabase
+        .from('activatiecodes').select('tenant_id').eq('code', activatiecode.toUpperCase()).single();
+      tenantId = codeRecord?.tenant_id || null;
+    }
+
+    await supabase.from('herchecks').insert({
+      referentie,
+      tenant_id: tenantId,
+      activatiecode: activatiecode || null,
+      risico_niveau: analyse.risico_niveau || null,
+      hercheck_datum: hercheckDatum.toISOString().slice(0, 10),
+      hercheck_interval_maanden: hercheckAdvies,
+      hercheck_email: req.body.hercheckEmail || null,
+      actief: true
+    }).catch(err => console.error('Hercheck opslaan mislukt:', err));
   }
 
-  return res.status(200).json({ naam, geboortedatum, type, locatie, resultaten, analyse, tijdstip, hercheck_advies_maanden: hercheckAdvies });
+  return res.status(200).json({ referentie, naam, geboortedatum, type, locatie, resultaten, analyse, tijdstip, hercheck_advies_maanden: hercheckAdvies });
 }
 
 // ═══ SHARED HELPERS ═════════════════════════════════════════
@@ -536,6 +587,13 @@ function defaultAnalyse() {
     bevindingen: [],
     risico_uitleg: 'De AI-analyse kon niet worden voltooid. Controleer de individuele zoekresultaten.'
   };
+}
+
+// Genereer uniek referentienummer: SCR-XXXX-XXXX (voor in rapport + hercheck)
+function genereerReferentie() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // geen I/O/0/1 (leesbaar)
+  const blok = () => Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  return `SCR-${blok()}-${blok()}`;
 }
 
 // Gebruik loggen: alleen teller per activatiecode/api_key, geen persoonsgegevens
