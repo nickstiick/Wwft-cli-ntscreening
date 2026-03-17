@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dossier — Wwft cliëntscreening in 60 seconden</title>
-  <meta name="description" content="Wwft cliëntscreening voor accountants, notarissen, advocaten, makelaars en andere Wwft-plichtige ondernemingen. Het opzoekwerk gedaan in 60 seconden.">
+  <title>Dossier — Wwft cliëntscreening in 5 stappen</title>
+  <meta name="description" content="Wwft cliëntscreening voor accountants, notarissen, advocaten, makelaars en andere Wwft-plichtige ondernemingen. Het zware zoekwerk gedaan in 5 stappen.">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -154,7 +154,7 @@
 
     /* How it works */
     .how {
-      max-width: 800px;
+      max-width: 1100px;
       margin: 80px auto;
       padding: 0 24px;
       text-align: center;
@@ -166,9 +166,12 @@
     }
     .steps {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 32px;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 24px;
       text-align: center;
+    }
+    @media (max-width: 800px) {
+      .steps { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
     }
     .step-num {
       width: 40px;
@@ -493,7 +496,7 @@
 </nav>
 
 <section class="hero">
-  <h1>Het opzoekwerk gedaan.<br><em>In 60 seconden.</em></h1>
+  <h1>Het zware zoekwerk gedaan.<br><em>In 5 stappen.</em></h1>
   <p>Wwft cliëntscreening voor accountants, notarissen, advocaten, makelaars en andere Wwft-plichtigen. U houdt het oordeel.</p>
   <a href="/screener" class="hero-cta">Gratis proefscreening starten</a>
   <div class="hero-sub">Geen account nodig. Eerste screening gratis.</div>
@@ -528,17 +531,27 @@
     <div>
       <div class="step-num">1</div>
       <h4>Gegevens invoeren</h4>
-      <p>Naam, geboortedatum en type subject (natuurlijk persoon of rechtspersoon).</p>
+      <p>Naam, geboortedatum en type cliënt.</p>
     </div>
     <div>
       <div class="step-num">2</div>
-      <h4>Automatisch zoeken</h4>
-      <p>Openbare bronnen, sanctielijsten, rechtspraak en KvK worden doorzocht.</p>
+      <h4>Openbare bronnen</h4>
+      <p>Google, nieuwsberichten en publieke registers doorzocht.</p>
     </div>
     <div>
       <div class="step-num">3</div>
-      <h4>Rapport downloaden</h4>
-      <p>Download uw rapport met risicobeoordeling en alle bronverwijzingen.</p>
+      <h4>Sanctielijsten</h4>
+      <p>EU, VN, OFAC en nationale sanctielijsten gecontroleerd.</p>
+    </div>
+    <div>
+      <div class="step-num">4</div>
+      <h4>Rechtspraak &amp; KvK</h4>
+      <p>Rechtspraak.nl en Kamer van Koophandel geraadpleegd.</p>
+    </div>
+    <div>
+      <div class="step-num">5</div>
+      <h4>Rapport &amp; risicoprofiel</h4>
+      <p>Alles geanalyseerd. Rapport met bronverwijzingen klaar.</p>
     </div>
   </div>
 </section>
