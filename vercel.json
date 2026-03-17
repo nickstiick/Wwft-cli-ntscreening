@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "buildCommand": "",
   "outputDirectory": "public",
   "functions": {
     "api/screen.js": {
@@ -19,10 +18,5 @@
     { "source": "/privacy", "destination": "/privacy-technisch.html" },
     { "source": "/admin", "destination": "/admin.html" }
   ],
-  "crons": [
-    {
-      "path": "/api/hercheck?secret=${ADMIN_SECRET}",
-      "schedule": "0 8 * * *"
-    }
-  ]
+  "crons": []
 }
