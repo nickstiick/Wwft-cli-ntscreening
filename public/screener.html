@@ -1334,39 +1334,6 @@
       isProef = true;
     }
 
-    if (!isProef && activatiecode) {
-      this.disabled = true;
-      this.textContent = 'Credit wordt afgeschreven...';
-      try {
-        const res = await fetch('/api/activate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code: activatiecode, gebruik: true, aantal: 1 })
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          if (res.status === 402) {
-            credits = data.credits_over || 0;
-            localStorage.setItem('dossier_credits', credits);
-            noCreditsMsg.style.display = 'block';
-            updateCreditBadge();
-          }
-          this.disabled = false;
-          this.textContent = 'Volgende stap →';
-          return;
-        }
-        credits = data.credits_over;
-        localStorage.setItem('dossier_credits', credits);
-        updateCreditBadge();
-      } catch {
-        this.disabled = false;
-        this.textContent = 'Volgende stap →';
-        return;
-      }
-      this.disabled = false;
-      this.textContent = 'Volgende stap →';
-    }
-
     showWizardBar();
     goToStep(2);
 
@@ -1461,7 +1428,13 @@
 
   function renderSanctionResults(data) {
     let html = '';
-    if (data.resultaten?.length > 0) {
+    if (!data.gecontroleerd) {
+      // Sanctielijsten konden niet worden gecontroleerd — toon alleen foutmelding
+      html += `<div class="wizard-result-box" style="border-color:var(--orange);">`;
+      html += `<div style="color:var(--orange); font-weight:bold;">Sanctielijsten konden niet worden gecontroleerd.</div>`;
+      html += `<div style="color:var(--text-light); font-size:12px; font-family:sans-serif; margin-top:4px;">Controleer of de Sanctions.io API-key geconfigureerd is of probeer het later opnieuw.</div>`;
+      html += `</div>`;
+    } else if (data.resultaten?.length > 0) {
       html += `<div class="wizard-result-box" style="border-color:var(--red);">`;
       html += `<div style="color:var(--red); font-weight:bold; margin-bottom:4px;">⚠ ${data.resultaten.length} sanctiehit(s) gevonden</div>`;
       html += `<div style="color:var(--text-light); font-size:12px; font-family:sans-serif; margin-bottom:12px;">Niet relevant? Markeer als false positive — dit wordt meegenomen in het rapport.</div>`;
@@ -1499,9 +1472,6 @@
           html += `</div>`;
         }
       });
-    }
-    if (!data.gecontroleerd) {
-      html += `<div class="wizard-result-box" style="color:var(--orange);">Sanctielijsten konden niet worden gecontroleerd.</div>`;
     }
     $('step3Results').innerHTML = html;
   }
@@ -1609,6 +1579,38 @@
   $('wizardStep4Prev').addEventListener('click', () => goToStep(3));
   $('wizardStep4Next').addEventListener('click', async function() {
     this.disabled = true;
+
+    // Credit afschrijven bij laatste stap (niet bij stap 1)
+    if (!isProef && activatiecode) {
+      this.textContent = 'Credit wordt afgeschreven...';
+      try {
+        const cRes = await fetch('/api/activate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: activatiecode, gebruik: true, aantal: 1 })
+        });
+        const cData = await cRes.json();
+        if (!cRes.ok) {
+          if (cRes.status === 402) {
+            credits = cData.credits_over || 0;
+            localStorage.setItem('dossier_credits', credits);
+            noCreditsMsg.style.display = 'block';
+            updateCreditBadge();
+          }
+          this.disabled = false;
+          this.textContent = 'Rapport genereren →';
+          return;
+        }
+        credits = cData.credits_over;
+        localStorage.setItem('dossier_credits', credits);
+        updateCreditBadge();
+      } catch {
+        this.disabled = false;
+        this.textContent = 'Rapport genereren →';
+        return;
+      }
+    }
+
     goToStep(5);
     const formData = collectFormData();
 
