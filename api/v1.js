@@ -59,48 +59,15 @@ async function handleScreen(req, res, keyRecord) {
   return screenHandler(req, res);
 }
 
-// ─── GET: screening historie ───────────────────────────────
+// ─── GET: API key gebruik overzicht ───────────────────────
 async function handleScreenings(req, res, keyRecord) {
-  const { limit = '20', offset = '0', naam, id } = req.query;
-
-  try {
-    // Enkele screening ophalen via ID
-    if (id) {
-      const { data: screening, error } = await supabase
-        .from('screenings')
-        .select('*')
-        .eq('id', id)
-        .eq('tenant_id', keyRecord.tenant_id)
-        .single();
-
-      if (error || !screening) return res.status(404).json({ error: 'Screening niet gevonden.' });
-      return res.status(200).json(screening);
-    }
-
-    // Lijst ophalen
-    let query = supabase
-      .from('screenings')
-      .select('id, naam, geboortedatum, type, locatie, land, risico_niveau, risico_score, samenvatting, hercheck_datum, hercheck_actief, medewerker, dossiernummer, aangemaakt_op', { count: 'exact' })
-      .eq('tenant_id', keyRecord.tenant_id)
-      .order('aangemaakt_op', { ascending: false })
-      .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
-
-    if (naam) query = query.ilike('naam', `%${naam}%`);
-
-    const { data: screenings, count, error } = await query;
-    if (error) {
-      console.error('Screenings query error:', error);
-      return res.status(500).json({ error: 'Fout bij ophalen screenings.' });
-    }
-
-    return res.status(200).json({
-      screenings: screenings || [],
-      totaal: count || 0,
-      limit: parseInt(limit),
-      offset: parseInt(offset)
-    });
-  } catch (error) {
-    console.error('Screenings error:', error);
-    return res.status(500).json({ error: 'Fout bij ophalen screenings.' });
-  }
+  // Geen screeningdata opgeslagen (privacy by design)
+  // Alleen creditgebruik per API key
+  return res.status(200).json({
+    credits_totaal: keyRecord.credits_totaal,
+    credits_gebruikt: keyRecord.credits_gebruikt,
+    credits_resterend: keyRecord.credits_totaal - keyRecord.credits_gebruikt,
+    geldig_tot: keyRecord.geldig_tot,
+    opmerking: 'Screeningresultaten worden niet opgeslagen. Alle data wordt alleen in-memory verwerkt en direct naar de client gestuurd.'
+  });
 }

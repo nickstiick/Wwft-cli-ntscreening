@@ -804,8 +804,7 @@
           <label for="hercheckAan">Hercheck inplannen <span class="help-tip" data-tip="U ontvangt een e-mail wanneer deze cliënt opnieuw gescreend dient te worden">?</span></label>
         </div>
         <div class="checkbox-group" style="margin-top:6px; display:none;" id="kvkMonitoringGroup">
-          <input type="checkbox" id="kvkMonitoring">
-          <label for="kvkMonitoring">KvK-monitoring <span class="help-tip" data-tip="Ontvang een melding bij wijzigingen in het Handelsregister voor deze rechtspersoon">?</span></label>
+          <input type="checkbox" id="kvkMonitoring" disabled>
         </div>
       </div>
       <div class="form-group" id="hercheckOpties" style="display:none;">
@@ -1020,10 +1019,7 @@
   </div>
 
   <!-- Herchecks -->
-  <div class="result-section" id="hercheckPanel" style="display:none; margin-top:16px;">
-    <h3>Geplande herchecks</h3>
-    <div id="hercheckContent" style="font-size:14px;"></div>
-  </div>
+  <!-- Geen hercheck-paneel: screeningdata wordt niet opgeslagen (privacy by design) -->
 
 </div>
 
@@ -1205,38 +1201,10 @@
     $('hercheckOpties').style.display = this.checked ? 'block' : 'none';
   });
 
-  // ─── LAAD SCREENING HISTORIE & HERCHECKS ─────────────────
+  // ─── LAAD GEBRUIKSOVERZICHT ─────────────────
   async function laadHistorie() {
+    // Geen screeningdata opgeslagen — alleen creditoverzicht
     if (!activatiecode) return;
-
-    try {
-      // Herchecks ophalen
-      const hRes = await fetch('/api/hercheck?code=' + encodeURIComponent(activatiecode));
-      if (hRes.ok) {
-        const hData = await hRes.json();
-        if (hData.herchecks?.length > 0) {
-          const panel = $('hercheckPanel');
-          panel.style.display = 'block';
-          let html = '<table style="width:100%;border-collapse:collapse;font-size:13px;">';
-          html += '<tr style="background:var(--navy);color:#fff;"><th style="padding:6px 10px;text-align:left;">Cliënt</th><th style="padding:6px 10px;text-align:left;">Risico</th><th style="padding:6px 10px;text-align:left;">Hercheck datum</th><th style="padding:6px 10px;text-align:left;">Dossier</th></tr>';
-          hData.herchecks.forEach(h => {
-            const rKleur = h.risico_niveau === 'hoog' ? 'var(--red)' : h.risico_niveau === 'verhoogd' ? 'var(--orange)' : 'var(--green)';
-            const datum = h.hercheck_datum ? new Date(h.hercheck_datum).toLocaleDateString('nl-NL') : '-';
-            const isVerlopen = h.hercheck_datum && new Date(h.hercheck_datum) <= new Date();
-            html += `<tr style="border-bottom:1px solid var(--border);${isVerlopen ? 'background:#fdf0ef;' : ''}">`;
-            html += `<td style="padding:6px 10px;">${escapeHtml(h.naam)}${h.geboortedatum ? ' (' + escapeHtml(h.geboortedatum) + ')' : ''}</td>`;
-            html += `<td style="padding:6px 10px;color:${rKleur};font-weight:bold;">${escapeHtml(h.risico_niveau || '-')} (${h.risico_score ?? '-'})</td>`;
-            html += `<td style="padding:6px 10px;${isVerlopen ? 'color:var(--red);font-weight:bold;' : ''}">${datum}${isVerlopen ? ' — VERLOPEN' : ''}</td>`;
-            html += `<td style="padding:6px 10px;">${escapeHtml(h.dossiernummer || '-')}</td>`;
-            html += '</tr>';
-          });
-          html += '</table>';
-          $('hercheckContent').innerHTML = html;
-        }
-      }
-    } catch (e) {
-      console.error('Historie laden mislukt:', e);
-    }
   }
 
   // Laad historie na activatie

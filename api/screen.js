@@ -28,7 +28,7 @@ module.exports = async function handler(req, res) {
   }
 
   // Volledige screening (originele flow, ook voor API-gebruik)
-  const { naam, geboortedatum, type, locatie, land, kvkZoeken, activatiecode, medewerker, dossiernummer, hercheck, hercheckEmail, kvkMonitoring,
+  const { naam, geboortedatum, type, locatie, land, kvkZoeken, activatiecode, hercheck,
     aard_dienst, nationaliteit, adres_straat, adres_postcode, id_document_type, id_document_nummer, id_document_geldig_tot,
     vertegenwoordiger_naam, vertegenwoordiger_geboortedatum, herkomst_middelen, herkomst_vermogen, ubos } = req.body;
 
@@ -204,11 +204,8 @@ module.exports = async function handler(req, res) {
 
     const tijdstip = new Date().toISOString();
 
-    // Extract KVK-nummer uit resultaten (eerste hit)
-    const kvkNummer = resultaten.kvk?.resultaten?.[0]?.kvkNummer || null;
-
-    // Sla screening op in database (async, geen blokkade)
-    // Wwft art. 33 cliëntgegevens meenemen in resultaten object (voor rapport)
+    // Cliëntgegevens meenemen in response (voor client-side rapport/PDF)
+    // Geen opslag van persoonsgegevens in backend — privacy by design
     resultaten.clientgegevens = {
       aard_dienst: aard_dienst || null,
       nationaliteit: nationaliteit || null,
@@ -224,99 +221,28 @@ module.exports = async function handler(req, res) {
       ubos: ubos || null
     };
 
-    const screeningRecord = {
-      naam,
-      geboortedatum: geboortedatum || null,
-      type: type || 'natuurlijk_persoon',
-      locatie: locatie || null,
-      land: land || 'Nederland',
-      kvk_nummer: kvkNummer,
-      risico_niveau: analyse.risico_niveau || null,
-      risico_score: analyse.risico_score >= 0 ? analyse.risico_score : null,
-      samenvatting: analyse.samenvatting || null,
-      resultaten,
-      analyse,
-      bron: req._apiKeyId ? 'api' : 'web',
-      medewerker: medewerker || null,
-      dossiernummer: dossiernummer || null,
-      aangemaakt_op: tijdstip
-    };
+    // Gebruik loggen (alleen teller, geen persoonsgegevens)
+    logGebruik(activatiecode, req._apiKeyId, req._tenantId);
 
-    // Koppel aan tenant via activatiecode
-    if (activatiecode) {
-      screeningRecord.activatiecode = activatiecode;
-      const { data: codeRecord } = await supabase
-        .from('activatiecodes')
-        .select('tenant_id')
-        .eq('code', activatiecode.toUpperCase())
-        .single();
-      if (codeRecord?.tenant_id) {
-        screeningRecord.tenant_id = codeRecord.tenant_id;
-      }
-    }
-
-    // API key koppeling
-    if (req._apiKeyId) {
-      screeningRecord.api_key_id = req._apiKeyId;
-      screeningRecord.tenant_id = req._tenantId;
-    }
-
-    // Hercheck instellen — risico-gebaseerd interval (Wwft art. 25 lid 5)
-    // Hoog risico: minimaal elke 3 maanden, verhoogd: 6, laag: 12
+    // Hercheck-advies meegeven in response (client bewaart dit zelf)
+    let hercheckAdvies = null;
     if (hercheck) {
       const risicoInterval = { hoog: 3, verhoogd: 6, laag: 12 };
       const gebruikerInterval = parseInt(hercheck) || 12;
       const risicoNiveau = analyse.risico_niveau || 'laag';
       const aanbevolenInterval = risicoInterval[risicoNiveau] || 12;
-      // Neem het strengste (kortste) interval van gebruiker en risico
-      const effectiefInterval = Math.min(gebruikerInterval, aanbevolenInterval);
-
-      const hercheckDatum = new Date();
-      hercheckDatum.setMonth(hercheckDatum.getMonth() + effectiefInterval);
-      screeningRecord.hercheck_datum = hercheckDatum.toISOString().slice(0, 10);
-      screeningRecord.hercheck_actief = true;
-      screeningRecord.hercheck_email = hercheckEmail || null;
-      screeningRecord.hercheck_interval_maanden = effectiefInterval;
-    }
-
-    // Opslaan (fire-and-forget, fout hier mag de response niet blokkeren)
-    let screeningId = null;
-    try {
-      const { data: saved } = await supabase
-        .from('screenings')
-        .insert(screeningRecord)
-        .select('id')
-        .single();
-      screeningId = saved?.id;
-
-      // KVK Monitoring activeren als gevraagd + KVK-nummer beschikbaar + tenant bekend
-      if (kvkMonitoring && kvkNummer && screeningRecord.tenant_id) {
-        await supabase
-          .from('kvk_monitoring')
-          .upsert({
-            tenant_id: screeningRecord.tenant_id,
-            kvk_nummer: kvkNummer,
-            bedrijfsnaam: resultaten.kvk?.resultaten?.[0]?.naam || naam,
-            laatste_screening_id: screeningId,
-            laatste_check: tijdstip,
-            actief: true
-          }, { onConflict: 'tenant_id,kvk_nummer', ignoreDuplicates: false })
-          .then(() => {})
-          .catch(err => console.error('KVK monitoring opslaan mislukt:', err));
-      }
-    } catch (saveErr) {
-      console.error('Screening opslaan mislukt:', saveErr);
+      hercheckAdvies = Math.min(gebruikerInterval, aanbevolenInterval);
     }
 
     return res.status(200).json({
-      id: screeningId,
       naam,
       geboortedatum,
       type,
       locatie,
       resultaten,
       analyse,
-      tijdstip
+      tijdstip,
+      hercheck_advies_maanden: hercheckAdvies
     });
 
   } catch (error) {
@@ -450,13 +376,14 @@ async function stepSearch(req, res) {
 
 async function stepAnalyse(req, res) {
   const { naam, geboortedatum, type, locatie, land, resultaten,
-    activatiecode, medewerker, dossiernummer, hercheck, hercheckEmail, kvkMonitoring,
+    activatiecode, hercheck,
     aard_dienst, nationaliteit, adres_straat, adres_postcode,
     id_document_type, id_document_nummer, id_document_geldig_tot,
     vertegenwoordiger_naam, vertegenwoordiger_geboortedatum,
     herkomst_middelen, herkomst_vermogen, ubos } = req.body;
   if (!naam || !resultaten) return res.status(400).json({ error: 'Naam en resultaten zijn verplicht.' });
 
+  // Cliëntgegevens voor client-side rapport (niet opgeslagen)
   resultaten.clientgegevens = {
     aard_dienst: aard_dienst || null, nationaliteit: nationaliteit || null,
     adres_straat: adres_straat || null, adres_postcode: adres_postcode || null,
@@ -476,55 +403,21 @@ async function stepAnalyse(req, res) {
 
   const analyse = await analyseMetClaude(naam, geboortedatum, type, locatie, resultaten);
   const tijdstip = new Date().toISOString();
-  const kvkNummer = resultaten.kvk?.resultaten?.[0]?.kvkNummer || null;
 
-  const screeningRecord = {
-    naam, geboortedatum: geboortedatum || null, type: type || 'natuurlijk_persoon',
-    locatie: locatie || null, land: land || 'Nederland', kvk_nummer: kvkNummer,
-    risico_niveau: analyse.risico_niveau || null,
-    risico_score: analyse.risico_score >= 0 ? analyse.risico_score : null,
-    samenvatting: analyse.samenvatting || null, resultaten, analyse,
-    bron: 'web', medewerker: medewerker || null, dossiernummer: dossiernummer || null,
-    aangemaakt_op: tijdstip
-  };
+  // Gebruik loggen (alleen teller, geen persoonsgegevens)
+  logGebruik(activatiecode, null, null);
 
-  if (activatiecode) {
-    screeningRecord.activatiecode = activatiecode;
-    const { data: codeRecord } = await supabase
-      .from('activatiecodes').select('tenant_id').eq('code', activatiecode.toUpperCase()).single();
-    if (codeRecord?.tenant_id) screeningRecord.tenant_id = codeRecord.tenant_id;
-  }
-
-  // Hercheck — risico-gebaseerd interval (Wwft art. 25 lid 5)
+  // Hercheck-advies meegeven (client bewaart dit zelf)
+  let hercheckAdvies = null;
   if (hercheck) {
     const risicoInterval = { hoog: 3, verhoogd: 6, laag: 12 };
     const gebruikerInterval = parseInt(hercheck) || 12;
     const risicoNiveau = analyse.risico_niveau || 'laag';
     const aanbevolenInterval = risicoInterval[risicoNiveau] || 12;
-    const effectiefInterval = Math.min(gebruikerInterval, aanbevolenInterval);
-
-    const hercheckDatum = new Date();
-    hercheckDatum.setMonth(hercheckDatum.getMonth() + effectiefInterval);
-    screeningRecord.hercheck_datum = hercheckDatum.toISOString().slice(0, 10);
-    screeningRecord.hercheck_actief = true;
-    screeningRecord.hercheck_email = hercheckEmail || null;
-    screeningRecord.hercheck_interval_maanden = effectiefInterval;
+    hercheckAdvies = Math.min(gebruikerInterval, aanbevolenInterval);
   }
 
-  let screeningId = null;
-  try {
-    const { data: saved } = await supabase.from('screenings').insert(screeningRecord).select('id').single();
-    screeningId = saved?.id;
-    if (kvkMonitoring && kvkNummer && screeningRecord.tenant_id) {
-      await supabase.from('kvk_monitoring').upsert({
-        tenant_id: screeningRecord.tenant_id, kvk_nummer: kvkNummer,
-        bedrijfsnaam: resultaten.kvk?.resultaten?.[0]?.naam || naam,
-        laatste_screening_id: screeningId, laatste_check: tijdstip, actief: true
-      }, { onConflict: 'tenant_id,kvk_nummer', ignoreDuplicates: false }).catch(() => {});
-    }
-  } catch (saveErr) { console.error('Screening opslaan mislukt:', saveErr); }
-
-  return res.status(200).json({ id: screeningId, naam, geboortedatum, type, locatie, resultaten, analyse, tijdstip });
+  return res.status(200).json({ naam, geboortedatum, type, locatie, resultaten, analyse, tijdstip, hercheck_advies_maanden: hercheckAdvies });
 }
 
 // ═══ SHARED HELPERS ═════════════════════════════════════════
@@ -643,6 +536,18 @@ function defaultAnalyse() {
     bevindingen: [],
     risico_uitleg: 'De AI-analyse kon niet worden voltooid. Controleer de individuele zoekresultaten.'
   };
+}
+
+// Gebruik loggen: alleen teller per activatiecode/api_key, geen persoonsgegevens
+async function logGebruik(activatiecode, apiKeyId, tenantId) {
+  try {
+    if (activatiecode) {
+      await supabase.rpc('increment_gebruik', { code_param: activatiecode.toUpperCase() }).catch(() => {});
+    }
+    // Fallback: als er geen RPC is, tellen we via de activatiecodes tabel (credits_gebruikt wordt al bijgehouden door activate.js)
+  } catch (e) {
+    // Niet-blokkerend — gebruik-logging mag nooit de screening breken
+  }
 }
 
 function getBaseUrl(req) {
