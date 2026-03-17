@@ -45,7 +45,7 @@ module.exports = async function handler(req, res) {
       resultaten.queries.push({ type: 'google', query: q, tijdstip: timestamp() });
       try {
         return await serperGoogle(q);
-      } catch { return []; }
+      } catch (e) { console.warn('Google search mislukt:', e.message); return []; }
     });
 
     // ─── SERPER: NEWS (via Mullvad VPN) ─────────────────
@@ -56,7 +56,7 @@ module.exports = async function handler(req, res) {
     const newsPromise = (async () => {
       try {
         return await serperNews(newsQuery);
-      } catch { return []; }
+      } catch (e) { console.warn('Nieuws search mislukt:', e.message); return []; }
     })();
 
     // ─── YANDEX (automatisch bij internationale cliënt) ──
@@ -67,7 +67,7 @@ module.exports = async function handler(req, res) {
       yandexPromise = (async () => {
         try {
           return await serperGoogle(yandexQuery, { gl: 'ru', hl: 'ru', bron: 'Yandex/Google RU' });
-        } catch { return []; }
+        } catch (e) { console.warn('Yandex search mislukt:', e.message); return []; }
       })();
     }
 
@@ -85,6 +85,7 @@ module.exports = async function handler(req, res) {
           `https://api.sanctions.io/search/?${params.toString()}`,
           { headers: { 'Authorization': `Bearer ${process.env.SANCTIONS_API_KEY}`, 'Accept': 'application/json' } }
         );
+        if (!resp.ok) throw new Error(`Sanctions.io HTTP ${resp.status}`);
         const data = await resp.json();
         return {
           resultaten: (data.results || []).slice(0, 10).map(r => ({
@@ -96,7 +97,8 @@ module.exports = async function handler(req, res) {
           })),
           gecontroleerd: true
         };
-      } catch {
+      } catch (e) {
+        console.error('Sanctiescreening mislukt:', e.message);
         return { resultaten: [], gecontroleerd: false };
       }
     })();
@@ -108,14 +110,16 @@ module.exports = async function handler(req, res) {
       try {
         const baseUrl = getBaseUrl(req);
         const resp = await fetch(`${baseUrl}/api/rechtspraak?naam=${encodeURIComponent(naam)}`);
+        if (!resp.ok) throw new Error(`Rechtspraak HTTP ${resp.status}`);
         return await resp.json();
-      } catch {
+      } catch (e) {
+        console.warn('Rechtspraak ophalen mislukt:', e.message);
         return { resultaten: [] };
       }
     })();
 
     // ─── KVK (inbegrepen bij rechtspersoon/ubo) ──────────
-    let kvkPromise = Promise.resolve({ resultaten: [], basisprofiel: null, vestigingsprofielen: [] });
+    let kvkPromise = Promise.resolve({ resultaten: [], basisprofiel: null, vestigingsprofielen: [], gecontroleerd: false });
     if (type === 'rechtspersoon' || type === 'ubo') {
       resultaten.queries.push({ type: 'kvk', query: naam, tijdstip: timestamp() });
       kvkPromise = (async () => {
@@ -123,9 +127,10 @@ module.exports = async function handler(req, res) {
           const baseUrl = getBaseUrl(req);
           // Zoeken + basisprofiel in één aanroep
           const resp = await fetch(`${baseUrl}/api/kvk?naam=${encodeURIComponent(naam)}&profiel=true`);
+          if (!resp.ok) throw new Error(`KvK HTTP ${resp.status}`);
           const kvkData = await resp.json();
           const zoekResultaten = kvkData.resultaten || [];
-          if (!zoekResultaten.length) return { resultaten: [], basisprofiel: null, vestigingsprofielen: [] };
+          if (!zoekResultaten.length) return { resultaten: [], basisprofiel: null, vestigingsprofielen: [], gecontroleerd: true };
 
           // Vestigingsprofielen ophalen voor unieke vestigingsnummers
           const vestigingsprofielen = [];
@@ -145,10 +150,12 @@ module.exports = async function handler(req, res) {
           return {
             resultaten: zoekResultaten,
             basisprofiel: kvkData.basisprofiel || null,
-            vestigingsprofielen
+            vestigingsprofielen,
+            gecontroleerd: true
           };
-        } catch {
-          return { resultaten: [], basisprofiel: null, vestigingsprofielen: [] };
+        } catch (e) {
+          console.warn('KvK ophalen mislukt:', e.message);
+          return { resultaten: [], basisprofiel: null, vestigingsprofielen: [], gecontroleerd: false };
         }
       })();
     }
@@ -343,6 +350,7 @@ Belangrijk:
       })
     });
 
+    if (!resp.ok) throw new Error(`Claude API HTTP ${resp.status}`);
     const data = await resp.json();
     const content = data.content?.[0]?.text || '';
 

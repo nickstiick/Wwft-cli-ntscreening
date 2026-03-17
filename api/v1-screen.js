@@ -52,14 +52,17 @@ module.exports = async function handler(req, res) {
     return res.status(402).json({ error: 'Geen API credits meer beschikbaar.', credits_over: 0 });
   }
 
-  // Credit afschrijven
-  const { error: updateError } = await supabase
+  // Credit afschrijven (atomic: alleen als credits_gebruikt nog niet boven limiet)
+  const { data: updated, error: updateError } = await supabase
     .from('api_keys')
     .update({ credits_gebruikt: keyRecord.credits_gebruikt + 1 })
-    .eq('id', keyRecord.id);
+    .eq('id', keyRecord.id)
+    .lt('credits_gebruikt', keyRecord.credits_totaal)
+    .select('credits_gebruikt')
+    .single();
 
-  if (updateError) {
-    return res.status(500).json({ error: 'Fout bij afschrijven credit.' });
+  if (updateError || !updated) {
+    return res.status(402).json({ error: 'Geen API credits meer beschikbaar.', credits_over: 0 });
   }
 
   // ─── SCREENING UITVOEREN ──────────────────

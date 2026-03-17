@@ -858,10 +858,10 @@
             const datum = h.hercheck_datum ? new Date(h.hercheck_datum).toLocaleDateString('nl-NL') : '-';
             const isVerlopen = h.hercheck_datum && new Date(h.hercheck_datum) <= new Date();
             html += `<tr style="border-bottom:1px solid var(--border);${isVerlopen ? 'background:#fdf0ef;' : ''}">`;
-            html += `<td style="padding:6px 10px;">${h.naam}${h.geboortedatum ? ' (' + h.geboortedatum + ')' : ''}</td>`;
-            html += `<td style="padding:6px 10px;color:${rKleur};font-weight:bold;">${h.risico_niveau || '-'} (${h.risico_score ?? '-'})</td>`;
+            html += `<td style="padding:6px 10px;">${escapeHtml(h.naam)}${h.geboortedatum ? ' (' + escapeHtml(h.geboortedatum) + ')' : ''}</td>`;
+            html += `<td style="padding:6px 10px;color:${rKleur};font-weight:bold;">${escapeHtml(h.risico_niveau || '-')} (${h.risico_score ?? '-'})</td>`;
             html += `<td style="padding:6px 10px;${isVerlopen ? 'color:var(--red);font-weight:bold;' : ''}">${datum}${isVerlopen ? ' — VERLOPEN' : ''}</td>`;
-            html += `<td style="padding:6px 10px;">${h.dossiernummer || '-'}</td>`;
+            html += `<td style="padding:6px 10px;">${escapeHtml(h.dossiernummer || '-')}</td>`;
             html += '</tr>';
           });
           html += '</table>';
@@ -1279,6 +1279,9 @@
         html += `</div>`;
       }
 
+      if (r.kvk && !r.kvk.gecontroleerd) {
+        html += `<div class="bevinding grijs"><div class="bevinding-text">KvK Handelsregister kon niet worden geraadpleegd.</div></div>`;
+      }
       html += `</div>`;
     }
 

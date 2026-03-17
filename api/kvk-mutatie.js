@@ -13,8 +13,8 @@ module.exports = async function handler(req, res) {
   // ─── POST: ontvang mutatie-notificatie van KVK ──────
   if (req.method === 'POST') {
     // Verifieer dat het request van KVK komt
-    const kvkSecret = req.headers['x-kvk-webhook-secret'] || req.query.secret;
-    if (kvkSecret !== process.env.KVK_WEBHOOK_SECRET) {
+    const kvkSecret = req.headers['x-kvk-webhook-secret'];
+    if (!kvkSecret || kvkSecret !== process.env.KVK_WEBHOOK_SECRET) {
       return res.status(401).json({ error: 'Niet geautoriseerd.' });
     }
 
