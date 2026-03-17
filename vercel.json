@@ -1,5 +1,7 @@
 {
   "version": 2,
+  "framework": null,
+  "installCommand": "npm install",
   "outputDirectory": "public",
   "functions": {
     "api/screen.js": {
@@ -17,6 +19,5 @@
     { "source": "/privacy-technisch", "destination": "/privacy-technisch.html" },
     { "source": "/privacy", "destination": "/privacy-technisch.html" },
     { "source": "/admin", "destination": "/admin.html" }
-  ],
-  "crons": []
+  ]
 }
