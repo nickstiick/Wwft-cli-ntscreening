@@ -351,9 +351,15 @@ async function screenSanctions(naam, geboortedatum, entityType) {
     'Authorization': `Bearer ${apiKey}`,
     'Accept': 'application/json; version=2.1'
   };
-  const params = new URLSearchParams({ name: naam, data_source: 'ALL' });
+  // sanctions.io API vereisten: min_score als decimaal (0-0.99), entity_type als Individual/Entity
+  const typeMap = { person: 'Individual', organization: 'Entity' };
+  const params = new URLSearchParams({
+    name: naam,
+    min_score: '0.75',
+    data_source: 'ALL',
+    entity_type: typeMap[entityType] || 'Individual'
+  });
   if (geboortedatum) params.set('date_of_birth', geboortedatum);
-  if (entityType) params.set('entity_type', entityType);
 
   const mapResults = (data) => (data.results || []).slice(0, 10).map(r => ({
     naam: r.name, lijst: r.list_name || r.source, score: r.score,

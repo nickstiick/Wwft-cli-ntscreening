@@ -23,6 +23,13 @@ module.exports = async function handler(req, res) {
       return res.status(502).json({ error: 'Rechtspraak.nl API niet bereikbaar.' });
     }
 
+    // Rechtspraak.nl kan HTML teruggeven i.p.v. JSON — detecteer dit
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.includes('json')) {
+      console.error('Rechtspraak API gaf geen JSON terug, content-type:', contentType);
+      return res.status(200).json({ aantal: 0, resultaten: [], opmerking: 'Rechtspraak.nl API tijdelijk niet beschikbaar als JSON-service.' });
+    }
+
     const data = await response.json();
 
     const resultaten = (data.resultaten || data.Results || []).slice(0, 5).map(item => ({
