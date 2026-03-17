@@ -246,6 +246,116 @@
     .submit-btn:active { transform: translateY(0); }
     .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
 
+    /* ─── WIZARD STEPS ─────────────────────── */
+    .wizard-bar {
+      display: flex;
+      justify-content: center;
+      gap: 0;
+      margin-bottom: 24px;
+      padding: 0;
+      counter-reset: step;
+    }
+    .wizard-step {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-family: sans-serif;
+      color: var(--text-light);
+      padding: 10px 16px;
+      position: relative;
+      cursor: default;
+    }
+    .wizard-step .step-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      font-weight: bold;
+      font-size: 12px;
+      background: var(--border);
+      color: var(--text-light);
+      flex-shrink: 0;
+      transition: all 0.3s;
+    }
+    .wizard-step.active .step-num { background: var(--navy); color: #fff; }
+    .wizard-step.done .step-num { background: var(--green); color: #fff; }
+    .wizard-step.active { color: var(--navy); font-weight: bold; }
+    .wizard-step.done { color: var(--green); }
+    .wizard-step:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      right: -8px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 16px;
+      height: 2px;
+      background: var(--border);
+    }
+    .wizard-step.done:not(:last-child)::after { background: var(--green); }
+    .wizard-panel { display: none; animation: fadeSlideIn 0.3s ease; }
+    .wizard-panel.active { display: block; }
+    .wizard-nav {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+      gap: 12px;
+    }
+    .wizard-nav .btn-prev,
+    .wizard-nav .btn-next {
+      padding: 12px 28px;
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+    .wizard-nav .btn-prev {
+      background: var(--cream);
+      color: var(--navy);
+      border: 1px solid var(--border);
+    }
+    .wizard-nav .btn-prev:hover { background: var(--border); }
+    .wizard-nav .btn-next {
+      background: var(--navy);
+      color: #fff;
+      margin-left: auto;
+    }
+    .wizard-nav .btn-next:hover { background: var(--navy-light); transform: translateY(-1px); }
+    .wizard-nav .btn-next:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    .wizard-result-box {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-top: 16px;
+    }
+    .wizard-loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-light);
+      font-family: sans-serif;
+    }
+    .wizard-loading .spinner {
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      border: 3px solid var(--border);
+      border-top-color: var(--navy);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 12px;
+    }
+    @media (max-width: 600px) {
+      .wizard-bar { flex-wrap: wrap; gap: 4px; }
+      .wizard-step { font-size: 11px; padding: 6px 8px; }
+      .wizard-step:not(:last-child)::after { display: none; }
+    }
+
     /* ─── PROGRESS ─────────────────────────── */
     .progress-panel {
       display: none;
@@ -594,9 +704,18 @@
     Geen credits meer beschikbaar. <a href="/">Koop een nieuwe bundel</a> om door te gaan.
   </div>
 
-  <!-- Screening form -->
-  <div class="screen-form" id="screenForm">
-    <h2>Cliëntscreening</h2>
+  <!-- Wizard Step Bar -->
+  <div class="wizard-bar" id="wizardBar" style="display:none;">
+    <div class="wizard-step active" data-ws="1"><span class="step-num">1</span> Gegevens</div>
+    <div class="wizard-step" data-ws="2"><span class="step-num">2</span> KvK</div>
+    <div class="wizard-step" data-ws="3"><span class="step-num">3</span> Sancties</div>
+    <div class="wizard-step" data-ws="4"><span class="step-num">4</span> Bronnen</div>
+    <div class="wizard-step" data-ws="5"><span class="step-num">5</span> Rapport</div>
+  </div>
+
+  <!-- Screening form (Wizard Step 1) -->
+  <div class="screen-form wizard-panel active" id="screenForm" data-wizard="1">
+    <h2>Stap 1 — Cliëntgegevens</h2>
     <div class="form-grid">
       <div class="form-group full">
         <label for="naam">Volledige naam *</label>
@@ -793,26 +912,71 @@
       </div>
     </div>
 
-    <button class="submit-btn" id="submitBtn">Screening starten</button>
+    <div class="wizard-nav">
+      <span></span>
+      <button class="btn-next" id="wizardStep1Next">Volgende stap &rarr;</button>
+    </div>
   </div>
 
-  <!-- Progress -->
-  <div class="progress-panel" id="progressPanel">
-    <h3>Screening wordt uitgevoerd...</h3>
-    <div class="progress-subtitle" id="progressSubtitle">Even geduld, dit duurt meestal 15–30 seconden.</div>
-    <div class="progress-bar-track"><div class="progress-bar-fill" id="progressBarFill"></div></div>
-    <ul class="progress-steps" id="progressSteps">
-      <li id="step-credit"><span class="step-icon"></span> Credit controleren</li>
-      <li id="step-google"><span class="step-icon"></span> Internet doorzoeken</li>
-      <li id="step-nieuws"><span class="step-icon"></span> Nieuwsberichten ophalen</li>
-      <li id="step-sancties"><span class="step-icon"></span> Sanctielijsten controleren</li>
-      <li id="step-rechtspraak"><span class="step-icon"></span> Rechtspraak doorzoeken</li>
-      <li id="step-kvk" style="display:none;"><span class="step-icon"></span> KvK Handelsregister doorzoeken</li>
-      <li id="step-analyse"><span class="step-icon"></span> Analyse uitvoeren</li>
-    </ul>
+  <!-- Wizard Step 2: KvK -->
+  <div class="wizard-panel screen-form" id="wizardStep2" data-wizard="2">
+    <h2>Stap 2 — KvK Handelsregister</h2>
+    <div id="step2Content">
+      <div class="wizard-loading" id="step2Loading" style="display:none;">
+        <div class="spinner"></div><br>KvK Handelsregister wordt doorzocht...
+      </div>
+      <div id="step2Results"></div>
+      <div id="step2Skip" style="display:none; text-align:center; padding:30px; color:var(--text-light); font-family:sans-serif;">
+        <p>KvK opzoeken is niet geselecteerd of niet van toepassing.</p>
+      </div>
+    </div>
+    <div class="wizard-nav">
+      <button class="btn-prev" id="wizardStep2Prev">&larr; Vorige</button>
+      <button class="btn-next" id="wizardStep2Next">Volgende stap &rarr;</button>
+    </div>
   </div>
 
-  <!-- Results -->
+  <!-- Wizard Step 3: Sancties -->
+  <div class="wizard-panel screen-form" id="wizardStep3" data-wizard="3">
+    <h2>Stap 3 — Sanctielijsten &amp; PEP</h2>
+    <div id="step3Content">
+      <div class="wizard-loading" id="step3Loading" style="display:none;">
+        <div class="spinner"></div><br>Sanctielijsten worden gecontroleerd (EU, OFAC, VN)...
+      </div>
+      <div id="step3Results"></div>
+    </div>
+    <div class="wizard-nav">
+      <button class="btn-prev" id="wizardStep3Prev">&larr; Vorige</button>
+      <button class="btn-next" id="wizardStep3Next">Volgende stap &rarr;</button>
+    </div>
+  </div>
+
+  <!-- Wizard Step 4: Google + Nieuws + Rechtspraak -->
+  <div class="wizard-panel screen-form" id="wizardStep4" data-wizard="4">
+    <h2>Stap 4 — Bronnenonderzoek</h2>
+    <div id="step4Content">
+      <div class="wizard-loading" id="step4Loading" style="display:none;">
+        <div class="spinner"></div><br>Internet, nieuws en rechtspraak worden doorzocht...
+      </div>
+      <div id="step4Results"></div>
+    </div>
+    <div class="wizard-nav">
+      <button class="btn-prev" id="wizardStep4Prev">&larr; Vorige</button>
+      <button class="btn-next" id="wizardStep4Next">Rapport genereren &rarr;</button>
+    </div>
+  </div>
+
+  <!-- Wizard Step 5: Analyse + Rapport -->
+  <div class="wizard-panel screen-form" id="wizardStep5" data-wizard="5">
+    <h2>Stap 5 — Analyse &amp; Rapport</h2>
+    <div id="step5Content">
+      <div class="wizard-loading" id="step5Loading" style="display:none;">
+        <div class="spinner"></div><br>AI-analyse wordt uitgevoerd en rapport wordt gegenereerd...
+      </div>
+    </div>
+  </div>
+
+  <!-- Results (used by step 5 to render the full report) -->
   <div class="results-panel" id="resultsPanel"></div>
 
   <!-- Screening Historie -->
@@ -847,8 +1011,6 @@
   const activationBar = $('activationBar');
   const activationStatus = $('activationStatus');
   const activationError = $('activationError');
-  const submitBtn = $('submitBtn');
-  const progressPanel = $('progressPanel');
   const resultsPanel = $('resultsPanel');
   const noCreditsMsg = $('noCreditsMsg');
   const watermark = $('watermark');
@@ -996,8 +1158,7 @@
   });
 
   function updateSubmitBtnLabel() {
-    if (submitBtn.disabled) return;
-    submitBtn.textContent = 'Screening starten (1 credit)';
+    // Legacy: no-op in wizard mode
   }
   // Check bij pagina-load
   if ($('type').value === 'rechtspersoon' || $('type').value === 'ubo') {
@@ -1049,16 +1210,80 @@
     setTimeout(laadHistorie, 500);
   }
 
-  // ─── SUBMIT SCREENING ─────────────────────
-  submitBtn.addEventListener('click', startScreening);
+  // ─── WIZARD FLOW ─────────────────────────
+  let wizardStep = 1;
+  let wizardData = {
+    kvk: { resultaten: [], basisprofiel: null, vestigingsprofielen: [], gecontroleerd: false },
+    sancties: { resultaten: [], gecontroleerd: true },
+    google: [],
+    nieuws: [],
+    rechtspraak: { resultaten: [] },
+    queries: []
+  };
+
+  // Show wizard bar on form interaction
+  function showWizardBar() { $('wizardBar').style.display = 'flex'; }
 
   // Clear validation on typing
   $('naam').addEventListener('input', function() {
     this.classList.remove('input-error');
     $('naamError').classList.remove('visible');
+    showWizardBar();
   });
 
-  async function startScreening() {
+  function goToStep(step) {
+    // Hide all wizard panels
+    document.querySelectorAll('.wizard-panel').forEach(p => p.classList.remove('active'));
+    // Update step bar
+    document.querySelectorAll('.wizard-step').forEach(s => {
+      const sn = parseInt(s.dataset.ws);
+      s.classList.remove('active', 'done');
+      if (sn < step) s.classList.add('done');
+      if (sn === step) s.classList.add('active');
+    });
+    // Show target panel
+    const panel = document.querySelector(`[data-wizard="${step}"]`);
+    if (panel) {
+      panel.classList.add('active');
+      panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    wizardStep = step;
+  }
+
+  function collectFormData() {
+    return {
+      naam: $('naam').value.trim(),
+      geboortedatum: $('geboortedatum').value || null,
+      type: $('type').value,
+      locatie: $('locatie').value.trim() || null,
+      land: $('land').value.trim() || 'Nederland',
+      kvkZoeken: $('kvkZoeken').checked,
+      activatiecode: activatiecode || null,
+      medewerker: $('medewerker')?.value?.trim() || null,
+      dossiernummer: $('dossiernummer')?.value?.trim() || null,
+      aard_dienst: $('aardDienst')?.value || null,
+      nationaliteit: $('nationaliteit')?.value?.trim() || null,
+      adres_straat: $('adresStraat')?.value?.trim() || null,
+      adres_postcode: $('adresPostcode')?.value?.trim() || null,
+      id_document_type: $('idDocType')?.value || null,
+      id_document_nummer: $('idDocNummer')?.value?.trim() || null,
+      id_document_geldig_tot: $('idDocGeldigTot')?.value || null,
+      vertegenwoordiger_naam: $('vertNaam')?.value?.trim() || null,
+      vertegenwoordiger_geboortedatum: $('vertGeboortedatum')?.value || null,
+      herkomst_middelen: $('herkomstMiddelen')?.value?.trim() || null,
+      herkomst_vermogen: $('herkomstVermogen')?.value?.trim() || null,
+      ubos: $('type').value === 'rechtspersoon' ? collectUbos() : null,
+      hercheck: $('hercheckAan').checked ? $('hercheckInterval').value : null,
+      kvkMonitoring: $('kvkMonitoring').checked || false
+    };
+  }
+
+  function stepError(panel, msg) {
+    panel.innerHTML = `<div style="padding:16px; background:#fdf0ef; border:1px solid var(--red); border-radius:var(--radius); color:var(--red); font-family:sans-serif;">${escapeHtml(msg)}</div>`;
+  }
+
+  // ── STEP 1 → 2: Validate form, deduct credit, go to KvK ──
+  $('wizardStep1Next').addEventListener('click', async function() {
     const naam = $('naam').value.trim();
     if (!naam) {
       $('naam').classList.add('input-error');
@@ -1067,7 +1292,7 @@
       return;
     }
 
-    // Determine tier
+    // Credit check
     isProef = false;
     if (!activatiecode || credits <= 0) {
       if (proefGebruikt) {
@@ -1077,131 +1302,272 @@
       isProef = true;
     }
 
-    // Altijd 1 credit per screening (KvK inbegrepen)
-    const creditAantal = 1;
-
-    // If not proef, deduct credit(s) server-side
     if (!isProef && activatiecode) {
-      setStep('step-credit', 'active');
-      progressPanel.classList.add('visible');
+      this.disabled = true;
+      this.textContent = 'Credit wordt afgeschreven...';
       try {
         const res = await fetch('/api/activate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code: activatiecode, gebruik: true, aantal: creditAantal })
+          body: JSON.stringify({ code: activatiecode, gebruik: true, aantal: 1 })
         });
         const data = await res.json();
         if (!res.ok) {
-          setStep('step-credit', 'error');
-          $('progressSubtitle').textContent = data.error || 'Credit afschrijven mislukt.';
-          $('progressSubtitle').style.color = 'var(--red)';
           if (res.status === 402) {
             credits = data.credits_over || 0;
             localStorage.setItem('dossier_credits', credits);
             noCreditsMsg.style.display = 'block';
             updateCreditBadge();
           }
-          submitBtn.disabled = false;
-          submitBtn.textContent = 'Screening starten';
+          this.disabled = false;
+          this.textContent = 'Volgende stap →';
           return;
         }
         credits = data.credits_over;
         localStorage.setItem('dossier_credits', credits);
         updateCreditBadge();
-        setStep('step-credit', 'done');
       } catch {
-        setStep('step-credit', 'error');
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Screening starten';
+        this.disabled = false;
+        this.textContent = 'Volgende stap →';
         return;
       }
-    } else {
-      progressPanel.classList.add('visible');
-      setStep('step-credit', 'done');
+      this.disabled = false;
+      this.textContent = 'Volgende stap →';
     }
 
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Bezig...';
-    resultsPanel.classList.remove('visible');
-    resultsPanel.innerHTML = '';
-    $('progressBarFill').style.width = '10%';
+    showWizardBar();
+    goToStep(2);
 
-    // Show/hide KvK step
-    $('step-kvk').style.display = kvkAan ? 'flex' : 'none';
+    // Auto-start KvK if applicable
+    const formData = collectFormData();
+    const doKvk = formData.kvkZoeken && (formData.type === 'rechtspersoon' || formData.type === 'ubo');
 
-    // Show progress
-    setStep('step-google', 'active');
-    setStep('step-nieuws', 'active');
-    setStep('step-sancties', 'active');
-    setStep('step-rechtspraak', 'active');
-    if (kvkAan) setStep('step-kvk', 'active');
+    if (doKvk) {
+      $('step2Loading').style.display = 'block';
+      $('step2Skip').style.display = 'none';
+      $('step2Results').innerHTML = '';
+      try {
+        const res = await fetch('/api/screen-step', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ step: 'kvk', naam: formData.naam, type: formData.type })
+        });
+        const data = await res.json();
+        wizardData.kvk = data;
+        $('step2Loading').style.display = 'none';
+        renderKvkResults(data);
+      } catch (err) {
+        $('step2Loading').style.display = 'none';
+        stepError($('step2Results'), 'KvK opvragen mislukt: ' + err.message);
+      }
+    } else {
+      $('step2Loading').style.display = 'none';
+      $('step2Skip').style.display = 'block';
+      $('step2Results').innerHTML = '';
+    }
+  });
 
+  function renderKvkResults(data) {
+    let html = '';
+    if (data.basisprofiel) {
+      const bp = data.basisprofiel;
+      html += `<div class="wizard-result-box">`;
+      html += `<div style="font-size:16px; font-weight:bold; color:var(--navy); margin-bottom:8px;">${escapeHtml(bp.naam || bp.statutaireNaam || '')}</div>`;
+      html += `<div style="display:grid; grid-template-columns:1fr 1fr; gap:6px 20px; font-size:13px; font-family:sans-serif;">`;
+      html += `<div><span style="color:var(--text-light);">KvK-nummer:</span> <strong>${escapeHtml(bp.kvkNummer || '')}</strong></div>`;
+      if (bp.formeleRegistratiedatum) html += `<div><span style="color:var(--text-light);">Registratiedatum:</span> ${escapeHtml(bp.formeleRegistratiedatum)}</div>`;
+      if (bp.totaalWerkzamePersonen != null) html += `<div><span style="color:var(--text-light);">Werkzame personen:</span> ${bp.totaalWerkzamePersonen}</div>`;
+      if (bp.sbiActiviteiten?.length > 0) {
+        html += `<div style="grid-column:1/-1;"><span style="color:var(--text-light);">Activiteiten:</span> ${bp.sbiActiviteiten.map(s => escapeHtml(s.sbiOmschrijving)).join(', ')}</div>`;
+      }
+      if (bp._embedded?.eigenaar?.naam) {
+        html += `<div style="grid-column:1/-1;"><span style="color:var(--text-light);">Eigenaar:</span> ${escapeHtml(bp._embedded.eigenaar.naam)}`;
+        if (bp._embedded.eigenaar.geboortedatum) html += ` (geb. ${escapeHtml(bp._embedded.eigenaar.geboortedatum)})`;
+        html += `</div>`;
+      }
+      html += `</div></div>`;
+    }
+    if (data.resultaten?.length > 0 && !data.basisprofiel) {
+      html += `<div class="wizard-result-box"><strong>KvK resultaten:</strong><br>`;
+      data.resultaten.forEach(r => {
+        html += `<div style="padding:4px 0; font-size:13px;">${escapeHtml(r.naam)} — KvK ${escapeHtml(r.kvkNummer || '')} ${r.actief === false ? '<span style="color:var(--red);">(inactief)</span>' : ''}</div>`;
+      });
+      html += `</div>`;
+    }
+    if (!data.resultaten?.length && !data.basisprofiel) {
+      html += `<div class="wizard-result-box" style="color:var(--text-light);">Geen KvK-resultaten gevonden voor deze naam.</div>`;
+    }
+    if (!data.gecontroleerd) {
+      html += `<div class="wizard-result-box" style="color:var(--orange);">KvK Handelsregister kon niet worden geraadpleegd.</div>`;
+    }
+    $('step2Results').innerHTML = html;
+  }
+
+  // ── STEP 2 → 3: Sanctions ──
+  $('wizardStep2Prev').addEventListener('click', () => goToStep(1));
+  $('wizardStep2Next').addEventListener('click', async function() {
+    goToStep(3);
+    const formData = collectFormData();
+
+    $('step3Loading').style.display = 'block';
+    $('step3Results').innerHTML = '';
     try {
-      const body = {
-        naam,
-        geboortedatum: $('geboortedatum').value || null,
-        type: $('type').value,
-        locatie: $('locatie').value.trim() || null,
-        land: $('land').value.trim() || 'Nederland',
-        kvkZoeken: $('kvkZoeken').checked,
-        activatiecode: activatiecode || null,
-        medewerker: $('medewerker')?.value?.trim() || null,
-        dossiernummer: $('dossiernummer')?.value?.trim() || null,
-        // Wwft art. 33 velden
-        aard_dienst: $('aardDienst')?.value || null,
-        nationaliteit: $('nationaliteit')?.value?.trim() || null,
-        adres_straat: $('adresStraat')?.value?.trim() || null,
-        adres_postcode: $('adresPostcode')?.value?.trim() || null,
-        id_document_type: $('idDocType')?.value || null,
-        id_document_nummer: $('idDocNummer')?.value?.trim() || null,
-        id_document_geldig_tot: $('idDocGeldigTot')?.value || null,
-        vertegenwoordiger_naam: $('vertNaam')?.value?.trim() || null,
-        vertegenwoordiger_geboortedatum: $('vertGeboortedatum')?.value || null,
-        herkomst_middelen: $('herkomstMiddelen')?.value?.trim() || null,
-        herkomst_vermogen: $('herkomstVermogen')?.value?.trim() || null,
-        ubos: $('type').value === 'rechtspersoon' ? collectUbos() : null
-      };
-
-      // Hercheck meesturen als aangevinkt
-      if ($('hercheckAan').checked) {
-        body.hercheck = $('hercheckInterval').value;
-      }
-
-      // KVK monitoring meesturen als aangevinkt
-      if ($('kvkMonitoring').checked) {
-        body.kvkMonitoring = true;
-      }
-
-      const res = await fetch('/api/screen', {
+      const res = await fetch('/api/screen-step', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
+        body: JSON.stringify({ step: 'sanctions', naam: formData.naam, geboortedatum: formData.geboortedatum, type: formData.type })
       });
-
-      $('progressBarFill').style.width = '60%';
-      setStep('step-google', 'done');
-      setStep('step-nieuws', 'done');
-      setStep('step-sancties', 'done');
-      setStep('step-rechtspraak', 'done');
-      if (kvkAan) setStep('step-kvk', 'done');
-      setStep('step-analyse', 'active');
-      $('progressBarFill').style.width = '80%';
-
       const data = await res.json();
+      wizardData.sancties = data;
+      $('step3Loading').style.display = 'none';
+      renderSanctionResults(data);
+    } catch (err) {
+      $('step3Loading').style.display = 'none';
+      stepError($('step3Results'), 'Sanctiecontrole mislukt: ' + err.message);
+    }
+  });
+
+  function renderSanctionResults(data) {
+    let html = '';
+    if (data.resultaten?.length > 0) {
+      html += `<div class="wizard-result-box" style="border-color:var(--red);">`;
+      html += `<div style="color:var(--red); font-weight:bold; margin-bottom:8px;">⚠ ${data.resultaten.length} sanctiehit(s) gevonden</div>`;
+      data.resultaten.forEach(s => {
+        html += `<div style="padding:8px; margin-bottom:6px; background:#fdf0ef; border-radius:var(--radius); font-size:13px;">`;
+        html += `<strong>${escapeHtml(s.naam)}</strong> — Score: ${s.score}%<br>`;
+        html += `<span style="color:var(--text-light);">${escapeHtml(s.lijst || '')}${s.details ? ' — ' + escapeHtml(s.details) : ''}</span>`;
+        html += `</div>`;
+      });
+      html += `</div>`;
+    } else {
+      html += `<div class="wizard-result-box" style="border-color:var(--green);">`;
+      html += `<div style="color:var(--green); font-weight:bold;">✓ Geen treffers op sanctielijsten (EU, OFAC, VN)</div>`;
+      html += `</div>`;
+    }
+    if (!data.gecontroleerd) {
+      html += `<div class="wizard-result-box" style="color:var(--orange);">Sanctielijsten konden niet worden gecontroleerd.</div>`;
+    }
+    $('step3Results').innerHTML = html;
+  }
+
+  // ── STEP 3 → 4: Search ──
+  $('wizardStep3Prev').addEventListener('click', () => goToStep(2));
+  $('wizardStep3Next').addEventListener('click', async function() {
+    goToStep(4);
+    const formData = collectFormData();
+
+    $('step4Loading').style.display = 'block';
+    $('step4Results').innerHTML = '';
+    try {
+      const res = await fetch('/api/screen-step', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ step: 'search', naam: formData.naam, locatie: formData.locatie, land: formData.land })
+      });
+      const data = await res.json();
+      wizardData.google = data.google || [];
+      wizardData.nieuws = data.nieuws || [];
+      wizardData.rechtspraak = data.rechtspraak || { resultaten: [] };
+      if (data.yandex) wizardData.yandex = data.yandex;
+      $('step4Loading').style.display = 'none';
+      renderSearchResults(data);
+    } catch (err) {
+      $('step4Loading').style.display = 'none';
+      stepError($('step4Results'), 'Bronnenonderzoek mislukt: ' + err.message);
+    }
+  });
+
+  function renderSearchResults(data) {
+    let html = '';
+    // Rechtspraak
+    const rr = data.rechtspraak?.resultaten || [];
+    html += `<div class="wizard-result-box">`;
+    html += `<h3 style="margin:0 0 8px 0; font-size:15px; color:var(--navy);">Rechtspraak.nl <span class="section-count">${rr.length}</span></h3>`;
+    if (rr.length > 0) {
+      rr.forEach(r => {
+        html += `<div style="padding:4px 0; font-size:13px;">`;
+        if (r.link) html += `<a href="${escapeHtml(r.link)}" target="_blank" rel="noopener">${escapeHtml(r.titel || r.ecli)}</a>`;
+        else html += `<strong>${escapeHtml(r.titel || r.ecli)}</strong>`;
+        if (r.instantie || r.datum) html += `<br><span style="color:var(--text-light); font-size:12px;">${escapeHtml(r.instantie || '')} ${r.datum ? '— ' + r.datum : ''}</span>`;
+        html += `</div>`;
+      });
+    } else {
+      html += `<div style="color:var(--green); font-size:13px;">✓ Geen uitspraken gevonden.</div>`;
+    }
+    html += `</div>`;
+
+    // Google
+    const gr = data.google || [];
+    html += `<div class="wizard-result-box" style="margin-top:12px;">`;
+    html += `<h3 style="margin:0 0 8px 0; font-size:15px; color:var(--navy);">Webresultaten <span class="section-count">${gr.length}</span></h3>`;
+    if (gr.length > 0) {
+      gr.slice(0, 10).forEach(g => {
+        html += `<div style="padding:4px 0; font-size:13px;">`;
+        html += `<a href="${escapeHtml(g.link)}" target="_blank" rel="noopener">${escapeHtml(g.titel)}</a>`;
+        if (g.snippet) html += `<br><span style="color:var(--text-light); font-size:12px;">${escapeHtml(g.snippet)}</span>`;
+        html += `</div>`;
+      });
+      if (gr.length > 10) html += `<div style="font-size:12px; color:var(--text-light);">+ ${gr.length - 10} meer resultaten (worden meegenomen in analyse)</div>`;
+    } else {
+      html += `<div style="color:var(--text-light); font-size:13px;">Geen webresultaten gevonden.</div>`;
+    }
+    html += `</div>`;
+
+    // Nieuws
+    const nr = data.nieuws || [];
+    if (nr.length > 0) {
+      html += `<div class="wizard-result-box" style="margin-top:12px;">`;
+      html += `<h3 style="margin:0 0 8px 0; font-size:15px; color:var(--navy);">Nieuwsberichten <span class="section-count">${nr.length}</span></h3>`;
+      nr.slice(0, 8).forEach(n => {
+        html += `<div style="padding:4px 0; font-size:13px;">`;
+        html += `<a href="${escapeHtml(n.link)}" target="_blank" rel="noopener">${escapeHtml(n.titel)}</a>`;
+        if (n.bron || n.datum) html += `<br><span style="color:var(--text-light); font-size:12px;">${escapeHtml(n.bron || '')} ${n.datum ? '— ' + n.datum : ''}</span>`;
+        html += `</div>`;
+      });
+      html += `</div>`;
+    }
+
+    $('step4Results').innerHTML = html;
+  }
+
+  // ── STEP 4 → 5: Analyse ──
+  $('wizardStep4Prev').addEventListener('click', () => goToStep(3));
+  $('wizardStep4Next').addEventListener('click', async function() {
+    this.disabled = true;
+    goToStep(5);
+    const formData = collectFormData();
+
+    $('step5Loading').style.display = 'block';
+
+    // Combine all wizard data into resultaten
+    const resultaten = {
+      google: wizardData.google,
+      nieuws: wizardData.nieuws,
+      sancties: wizardData.sancties,
+      rechtspraak: wizardData.rechtspraak,
+      kvk: wizardData.kvk,
+      queries: wizardData.queries || []
+    };
+    if (wizardData.yandex) resultaten.yandex = wizardData.yandex;
+
+    try {
+      const res = await fetch('/api/screen-step', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          step: 'analyse',
+          ...formData,
+          resultaten
+        })
+      });
+      const data = await res.json();
+      $('step5Loading').style.display = 'none';
 
       if (!res.ok) {
-        setStep('step-analyse', 'error');
-        $('progressSubtitle').textContent = data.error || 'Screening mislukt. Probeer het opnieuw.';
-        $('progressSubtitle').style.color = 'var(--red)';
-        $('progressBarFill').style.width = '100%';
-        $('progressBarFill').style.background = 'var(--red)';
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Screening starten';
+        $('step5Content').innerHTML = `<div style="padding:16px; background:#fdf0ef; border:1px solid var(--red); border-radius:var(--radius); color:var(--red);">${escapeHtml(data.error || 'Analyse mislukt.')}</div>`;
+        this.disabled = false;
         return;
       }
-
-      setStep('step-analyse', 'done');
-      $('progressBarFill').style.width = '100%';
 
       if (isProef) {
         proefGebruikt = true;
@@ -1209,21 +1575,16 @@
         watermark.style.display = 'block';
       }
 
+      // Hide wizard step 5 panel and show full report
+      document.querySelector('[data-wizard="5"]').classList.remove('active');
       renderResults(data);
-
-      // Herlaad herchecks na screening
       laadHistorie();
     } catch (err) {
-      console.error(err);
-      $('progressSubtitle').textContent = 'Er ging iets mis bij de screening. Controleer uw verbinding en probeer het opnieuw.';
-      $('progressSubtitle').style.color = 'var(--red)';
-      $('progressBarFill').style.width = '100%';
-      $('progressBarFill').style.background = 'var(--red)';
+      $('step5Loading').style.display = 'none';
+      $('step5Content').innerHTML = `<div style="padding:16px; background:#fdf0ef; border:1px solid var(--red); border-radius:var(--radius); color:var(--red);">${escapeHtml(err.message)}</div>`;
     }
-
-    submitBtn.disabled = false;
-    submitBtn.textContent = 'Screening starten';
-  }
+    this.disabled = false;
+  });
 
   function setStep(id, state) {
     const el = $(id);
@@ -2274,23 +2635,28 @@
     updateKvkMonitoringVisibility();
     updateUboVisibility();
 
-    // Reset progress
-    progressPanel.classList.remove('visible');
-    $('progressBarFill').style.width = '0%';
-    $('progressBarFill').style.background = 'var(--gold)';
-    $('progressSubtitle').textContent = 'Even geduld, dit duurt meestal 15\u201330 seconden.';
-    $('progressSubtitle').style.color = '';
-    // Reset step icons
-    ['step-credit','step-google','step-nieuws','step-sancties','step-rechtspraak','step-kvk','step-analyse'].forEach(id => {
-      const el = $(id);
-      el.className = '';
-      const existing = el.querySelector('.spinner') || el.querySelector('.step-icon');
-      if (existing) {
-        const ic = document.createElement('span');
-        ic.className = 'step-icon';
-        existing.replaceWith(ic);
-      }
+    // Reset wizard
+    wizardStep = 1;
+    wizardData = {
+      kvk: { resultaten: [], basisprofiel: null, vestigingsprofielen: [], gecontroleerd: false },
+      sancties: { resultaten: [], gecontroleerd: true },
+      google: [], nieuws: [],
+      rechtspraak: { resultaten: [] },
+      queries: []
+    };
+    // Reset wizard panels
+    document.querySelectorAll('.wizard-panel').forEach(p => p.classList.remove('active'));
+    $('screenForm').classList.add('active');
+    document.querySelectorAll('.wizard-step').forEach(s => {
+      s.classList.remove('active', 'done');
     });
+    document.querySelector('[data-ws="1"]').classList.add('active');
+    // Clear step content
+    ['step2Results', 'step3Results', 'step4Results', 'step5Content'].forEach(id => {
+      const el = $(id);
+      if (el) el.innerHTML = '';
+    });
+    $('wizardStep4Next').disabled = false;
 
     // Hide results, show form
     resultsPanel.classList.remove('visible');
