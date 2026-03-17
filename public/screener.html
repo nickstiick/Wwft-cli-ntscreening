@@ -206,25 +206,27 @@
       color: var(--text);
     }
 
-    /* Whitelabel section */
-    .whitelabel-section {
+    /* Collapsible sections */
+    .whitelabel-section, .collapsible-section {
       border-top: 1px solid var(--border);
       margin-top: 20px;
       padding-top: 20px;
     }
-    .whitelabel-toggle {
+    .whitelabel-toggle, .section-toggle {
       font-size: 14px;
       color: var(--navy);
       cursor: pointer;
       user-select: none;
     }
-    .whitelabel-toggle::before { content: '\25B6 '; font-size: 10px; }
-    .whitelabel-toggle.open::before { content: '\25BC '; }
-    .whitelabel-fields {
+    .whitelabel-toggle::before, .section-toggle::before { content: '\25B6 '; font-size: 10px; }
+    .whitelabel-toggle.open::before, .section-toggle.open::before { content: '\25BC '; }
+    .whitelabel-fields, .section-fields {
       display: none;
       margin-top: 14px;
     }
-    .whitelabel-fields.visible { display: grid; }
+    .whitelabel-fields.visible, .section-fields.visible { display: grid; }
+    .ubo-entry { padding:10px 0; border-bottom:1px solid var(--border); }
+    .ubo-entry:last-child { border-bottom:none; }
 
     .submit-btn {
       width: 100%;
@@ -606,7 +608,7 @@
         <input type="date" id="geboortedatum">
       </div>
       <div class="form-group">
-        <label for="locatie">Woonplaats of vestigingsplaats <span class="help-tip" data-tip="Niet verplicht, maar verfijnt de zoekresultaten">?</span></label>
+        <label for="locatie">Woonplaats of vestigingsplaats</label>
         <input type="text" id="locatie" placeholder="Amsterdam">
       </div>
       <div class="form-group">
@@ -619,6 +621,23 @@
           <option value="natuurlijk_persoon">Natuurlijk persoon</option>
           <option value="rechtspersoon">Rechtspersoon</option>
           <option value="ubo">UBO</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="aardDienst">Aard zakelijke relatie *</label>
+        <select id="aardDienst">
+          <option value="">— Selecteer —</option>
+          <option value="Samenstellingsopdracht">Samenstellingsopdracht</option>
+          <option value="Controle/audit">Controle/audit</option>
+          <option value="Belastingaangifte">Belastingaangifte</option>
+          <option value="Juridisch advies">Juridisch advies</option>
+          <option value="Notariële dienstverlening">Notariële dienstverlening</option>
+          <option value="Financieel advies">Financieel advies</option>
+          <option value="Vastgoedtransactie">Vastgoedtransactie</option>
+          <option value="Koopovereenkomst">Koopovereenkomst</option>
+          <option value="Hypotheekadvies">Hypotheekadvies</option>
+          <option value="Administratieve dienstverlening">Administratieve dienstverlening</option>
+          <option value="Overig">Overig</option>
         </select>
       </div>
       <div class="form-group">
@@ -644,6 +663,106 @@
           <option value="3">3 maanden</option>
           <option value="24">24 maanden</option>
         </select>
+      </div>
+
+      <!-- Cliëntidentificatie (Wwft art. 33) -->
+      <div class="form-group full collapsible-section">
+        <div class="section-toggle" id="idToggle">Cliëntidentificatie (Wwft art. 33)</div>
+        <div class="section-fields form-grid" id="idFields">
+          <div class="form-group">
+            <label for="nationaliteit">Nationaliteit</label>
+            <input type="text" id="nationaliteit" placeholder="Nederlandse">
+          </div>
+          <div class="form-group">
+            <label for="adresStraat">Straat + huisnummer</label>
+            <input type="text" id="adresStraat" placeholder="Keizersgracht 100">
+          </div>
+          <div class="form-group">
+            <label for="adresPostcode">Postcode</label>
+            <input type="text" id="adresPostcode" placeholder="1015 AA">
+          </div>
+          <div class="form-group" id="idDocGroup">
+            <label for="idDocType">Identificatiedocument</label>
+            <select id="idDocType">
+              <option value="">— Niet vastgelegd —</option>
+              <option value="Paspoort">Paspoort</option>
+              <option value="ID-kaart">ID-kaart</option>
+              <option value="Rijbewijs">Rijbewijs</option>
+              <option value="Verblijfsdocument">Verblijfsdocument</option>
+            </select>
+          </div>
+          <div class="form-group" id="idDocNrGroup">
+            <label for="idDocNummer">Documentnummer</label>
+            <input type="text" id="idDocNummer" placeholder="SPECI2014">
+          </div>
+          <div class="form-group" id="idDocGeldigGroup">
+            <label for="idDocGeldigTot">Geldig tot</label>
+            <input type="date" id="idDocGeldigTot">
+          </div>
+        </div>
+      </div>
+
+      <!-- Vertegenwoordiger -->
+      <div class="form-group full collapsible-section">
+        <div class="section-toggle" id="vertToggle">Vertegenwoordiger (indien van toepassing)</div>
+        <div class="section-fields form-grid" id="vertFields">
+          <div class="form-group">
+            <label for="vertNaam">Naam vertegenwoordiger</label>
+            <input type="text" id="vertNaam" placeholder="Volledige naam">
+          </div>
+          <div class="form-group">
+            <label for="vertGeboortedatum">Geboortedatum</label>
+            <input type="date" id="vertGeboortedatum">
+          </div>
+        </div>
+      </div>
+
+      <!-- UBO-gegevens (bij rechtspersoon) -->
+      <div class="form-group full collapsible-section" id="uboSection" style="display:none;">
+        <div class="section-toggle" id="uboToggle">UBO-gegevens (uiteindelijk belanghebbenden)</div>
+        <div class="section-fields" id="uboFields">
+          <div id="uboEntries">
+            <div class="ubo-entry form-grid" data-ubo="0">
+              <div class="form-group">
+                <label>Naam UBO 1</label>
+                <input type="text" class="uboNaam" placeholder="Volledige naam">
+              </div>
+              <div class="form-group">
+                <label>Geboortedatum</label>
+                <input type="date" class="uboGeboortedatum">
+              </div>
+              <div class="form-group">
+                <label>Aard belang</label>
+                <select class="uboAard">
+                  <option value="Aandeelhouder">Aandeelhouder (&gt;25%)</option>
+                  <option value="Stemrecht">Stemrecht (&gt;25%)</option>
+                  <option value="Feitelijke zeggenschap">Feitelijke zeggenschap</option>
+                  <option value="Pseudo-UBO">Pseudo-UBO (bestuurder)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Percentage belang</label>
+                <input type="number" class="uboPercentage" min="0" max="100" placeholder="bijv. 50">
+              </div>
+            </div>
+          </div>
+          <button type="button" id="addUboBtn" style="margin-top:10px; font-size:13px; font-family:sans-serif; background:none; border:1px solid var(--border); padding:6px 14px; border-radius:var(--radius); cursor:pointer; color:var(--navy);">+ UBO toevoegen</button>
+        </div>
+      </div>
+
+      <!-- Herkomst middelen -->
+      <div class="form-group full collapsible-section">
+        <div class="section-toggle" id="herkomstToggle">Herkomst middelen (bij verhoogd risico)</div>
+        <div class="section-fields form-grid" id="herkomstFields">
+          <div class="form-group full">
+            <label for="herkomstMiddelen">Herkomst middelen (source of funds)</label>
+            <textarea id="herkomstMiddelen" rows="2" placeholder="Bijv. salaris, ondernemingswinst, erfenis" style="padding:10px 12px; border:1px solid var(--border); border-radius:var(--radius); font-family:inherit; font-size:15px; resize:vertical;"></textarea>
+          </div>
+          <div class="form-group full">
+            <label for="herkomstVermogen">Herkomst vermogen (source of wealth)</label>
+            <textarea id="herkomstVermogen" rows="2" placeholder="Bijv. opgebouwd via onderneming, onroerend goed" style="padding:10px 12px; border:1px solid var(--border); border-radius:var(--radius); font-family:inherit; font-size:15px; resize:vertical;"></textarea>
+          </div>
+        </div>
       </div>
 
       <!-- Whitelabel -->
@@ -745,6 +864,58 @@
     this.classList.toggle('open');
     $('whitelabelFields').classList.toggle('visible');
   });
+
+  // Collapsible section toggles
+  ['idToggle', 'vertToggle', 'uboToggle', 'herkomstToggle'].forEach(id => {
+    const el = $(id);
+    if (el) el.addEventListener('click', function() {
+      this.classList.toggle('open');
+      const fieldsId = id.replace('Toggle', 'Fields');
+      $(fieldsId).classList.toggle('visible');
+    });
+  });
+
+  // UBO section visibility (alleen bij rechtspersoon)
+  function updateUboVisibility() {
+    const isRP = $('type').value === 'rechtspersoon';
+    $('uboSection').style.display = isRP ? 'block' : 'none';
+  }
+  $('type').addEventListener('change', updateUboVisibility);
+  updateUboVisibility();
+
+  // UBO toevoegen (max 4)
+  let uboCount = 1;
+  $('addUboBtn').addEventListener('click', function() {
+    if (uboCount >= 4) return;
+    const idx = uboCount++;
+    const entry = document.createElement('div');
+    entry.className = 'ubo-entry form-grid';
+    entry.dataset.ubo = idx;
+    entry.innerHTML = `
+      <div class="form-group"><label>Naam UBO ${idx + 1}</label><input type="text" class="uboNaam" placeholder="Volledige naam"></div>
+      <div class="form-group"><label>Geboortedatum</label><input type="date" class="uboGeboortedatum"></div>
+      <div class="form-group"><label>Aard belang</label><select class="uboAard"><option value="Aandeelhouder">Aandeelhouder (&gt;25%)</option><option value="Stemrecht">Stemrecht (&gt;25%)</option><option value="Feitelijke zeggenschap">Feitelijke zeggenschap</option><option value="Pseudo-UBO">Pseudo-UBO (bestuurder)</option></select></div>
+      <div class="form-group"><label>Percentage belang</label><input type="number" class="uboPercentage" min="0" max="100" placeholder="bijv. 50"></div>`;
+    $('uboEntries').appendChild(entry);
+    if (uboCount >= 4) this.style.display = 'none';
+  });
+
+  // Helper: collect UBO data
+  function collectUbos() {
+    const entries = document.querySelectorAll('.ubo-entry');
+    const ubos = [];
+    entries.forEach(e => {
+      const naam = e.querySelector('.uboNaam')?.value?.trim();
+      if (!naam) return;
+      ubos.push({
+        naam,
+        geboortedatum: e.querySelector('.uboGeboortedatum')?.value || null,
+        aard_belang: e.querySelector('.uboAard')?.value || null,
+        percentage: parseInt(e.querySelector('.uboPercentage')?.value) || null
+      });
+    });
+    return ubos;
+  }
 
   // ─── ACTIVATE ─────────────────────────────
   activateBtn.addEventListener('click', () => {
@@ -975,7 +1146,20 @@
         kvkZoeken: $('kvkZoeken').checked,
         activatiecode: activatiecode || null,
         medewerker: $('medewerker')?.value?.trim() || null,
-        dossiernummer: $('dossiernummer')?.value?.trim() || null
+        dossiernummer: $('dossiernummer')?.value?.trim() || null,
+        // Wwft art. 33 velden
+        aard_dienst: $('aardDienst')?.value || null,
+        nationaliteit: $('nationaliteit')?.value?.trim() || null,
+        adres_straat: $('adresStraat')?.value?.trim() || null,
+        adres_postcode: $('adresPostcode')?.value?.trim() || null,
+        id_document_type: $('idDocType')?.value || null,
+        id_document_nummer: $('idDocNummer')?.value?.trim() || null,
+        id_document_geldig_tot: $('idDocGeldigTot')?.value || null,
+        vertegenwoordiger_naam: $('vertNaam')?.value?.trim() || null,
+        vertegenwoordiger_geboortedatum: $('vertGeboortedatum')?.value || null,
+        herkomst_middelen: $('herkomstMiddelen')?.value?.trim() || null,
+        herkomst_vermogen: $('herkomstVermogen')?.value?.trim() || null,
+        ubos: $('type').value === 'rechtspersoon' ? collectUbos() : null
       };
 
       // Hercheck meesturen als aangevinkt
@@ -1093,6 +1277,7 @@
       html += `</div>`;
     }
 
+    const cg = r.clientgegevens || {};
     html += `<div style="text-align:center; font-size:13px; color:var(--text-light); margin-bottom:24px; font-family:sans-serif;">`;
     html += `Wwft Cliëntscreening — ${new Date(data.tijdstip).toLocaleString('nl-NL')}`;
     if (medewerker) html += `<br>Medewerker: ${escapeHtml(medewerker)}`;
@@ -1102,7 +1287,46 @@
     if (data.locatie) html += ` — ${escapeHtml(data.locatie)}`;
     const typeLabels = { natuurlijk_persoon: 'Natuurlijk persoon', rechtspersoon: 'Rechtspersoon', ubo: 'UBO' };
     if (data.type) html += `<br>Type: ${typeLabels[data.type] || escapeHtml(data.type)}`;
+    if (cg.aard_dienst) html += `<br>Aard dienstverlening: ${escapeHtml(cg.aard_dienst)}`;
     html += `</div>`;
+
+    // Cliëntidentificatie (Wwft art. 33)
+    const hasIdData = cg.nationaliteit || cg.adres_straat || cg.adres_postcode || cg.id_document_type || cg.vertegenwoordiger_naam;
+    if (hasIdData) {
+      html += `<div class="result-section">`;
+      html += `<h3>Cliëntidentificatie (art. 33 Wwft)</h3>`;
+      html += `<div style="display:grid; grid-template-columns:1fr 1fr; gap:6px 20px; font-size:13px; font-family:sans-serif;">`;
+      if (cg.nationaliteit) html += `<div><span style="color:var(--text-light);">Nationaliteit:</span> ${escapeHtml(cg.nationaliteit)}</div>`;
+      if (cg.adres_straat) html += `<div><span style="color:var(--text-light);">Adres:</span> ${escapeHtml(cg.adres_straat)}</div>`;
+      if (cg.adres_postcode || data.locatie) html += `<div><span style="color:var(--text-light);">Postcode/Plaats:</span> ${escapeHtml((cg.adres_postcode || '') + ' ' + (data.locatie || ''))}</div>`;
+      if (cg.id_document_type) {
+        let idStr = escapeHtml(cg.id_document_type);
+        if (cg.id_document_nummer) idStr += ` — nr. ${escapeHtml(cg.id_document_nummer)}`;
+        if (cg.id_document_geldig_tot) idStr += ` — geldig tot ${escapeHtml(cg.id_document_geldig_tot)}`;
+        html += `<div class="full" style="grid-column:1/-1;"><span style="color:var(--text-light);">Identificatiedocument:</span> ${idStr}</div>`;
+      }
+      if (cg.vertegenwoordiger_naam) {
+        let vertStr = escapeHtml(cg.vertegenwoordiger_naam);
+        if (cg.vertegenwoordiger_geboortedatum) vertStr += ` (${escapeHtml(cg.vertegenwoordiger_geboortedatum)})`;
+        html += `<div class="full" style="grid-column:1/-1;"><span style="color:var(--text-light);">Vertegenwoordiger:</span> ${vertStr}</div>`;
+      }
+      html += `</div></div>`;
+    }
+
+    // UBO-gegevens
+    if (cg.ubos?.length > 0) {
+      html += `<div class="result-section">`;
+      html += `<h3>UBO-gegevens <span class="section-count">${cg.ubos.length}</span></h3>`;
+      cg.ubos.forEach((u, i) => {
+        html += `<div style="padding:8px 0; ${i < cg.ubos.length - 1 ? 'border-bottom:1px solid var(--border);' : ''} font-size:13px; font-family:sans-serif;">`;
+        html += `<strong>${escapeHtml(u.naam)}</strong>`;
+        if (u.geboortedatum) html += ` (${escapeHtml(u.geboortedatum)})`;
+        html += ` — ${escapeHtml(u.aard_belang || '')}`;
+        if (u.percentage) html += ` ${u.percentage}%`;
+        html += `</div>`;
+      });
+      html += `</div>`;
+    }
 
     // Risk banner
     html += `<div class="risk-banner ${niveauClass}">`;
@@ -1110,6 +1334,37 @@
     if (a.risico_score >= 0) html += `<div class="risk-score">${a.risico_score}</div>`;
     html += `<div class="risk-label">${niveauLabel[niveauClass] || 'Onbekend'}</div>`;
     html += `</div>`;
+
+    // PEP-conclusie
+    html += `<div class="result-section">`;
+    html += `<h3>PEP-screening</h3>`;
+    if (a.is_pep === true) {
+      html += `<div class="bevinding rood"><div class="bevinding-text"><strong>PEP geïdentificeerd</strong> — ${escapeHtml(a.pep_toelichting || 'Verscherpt cliëntenonderzoek vereist.')}</div></div>`;
+    } else {
+      html += `<div class="bevinding groen"><div class="bevinding-text"><strong>Geen PEP</strong> — ${escapeHtml(a.pep_toelichting || 'Geen indicaties van PEP-status gevonden.')}</div></div>`;
+    }
+    html += `</div>`;
+
+    // CDD-niveau
+    const cddLabels = { vereenvoudigd: 'Vereenvoudigd cliëntenonderzoek', standaard: 'Standaard cliëntenonderzoek', verscherpt: 'Verscherpt cliëntenonderzoek' };
+    const cddKleur = { vereenvoudigd: 'groen', standaard: 'groen', verscherpt: 'oranje' };
+    if (a.cdd_niveau) {
+      html += `<div class="result-section">`;
+      html += `<h3>CDD-niveau</h3>`;
+      html += `<div class="bevinding ${cddKleur[a.cdd_niveau] || 'grijs'}">`;
+      html += `<div class="bevinding-text"><strong>${cddLabels[a.cdd_niveau] || escapeHtml(a.cdd_niveau)}</strong>`;
+      if (a.cdd_toelichting) html += ` — ${escapeHtml(a.cdd_toelichting)}`;
+      html += `</div></div></div>`;
+    }
+
+    // Herkomst middelen (als ingevuld)
+    if (cg.herkomst_middelen || cg.herkomst_vermogen) {
+      html += `<div class="result-section">`;
+      html += `<h3>Herkomst middelen</h3>`;
+      if (cg.herkomst_middelen) html += `<div style="font-size:13px; font-family:sans-serif; margin-bottom:6px;"><span style="color:var(--text-light);">Source of funds:</span> ${escapeHtml(cg.herkomst_middelen)}</div>`;
+      if (cg.herkomst_vermogen) html += `<div style="font-size:13px; font-family:sans-serif;"><span style="color:var(--text-light);">Source of wealth:</span> ${escapeHtml(cg.herkomst_vermogen)}</div>`;
+      html += `</div>`;
+    }
 
     // Samenvatting
     html += `<div class="result-section">`;
@@ -1561,6 +1816,13 @@
       pdf.text('Type: ' + (typeLabels[d.type] || d.type), pageW / 2, y, { align: 'center' });
       y += 4;
     }
+    const cg = d.resultaten?.clientgegevens || {};
+    if (cg.aard_dienst) {
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(102, 102, 102);
+      pdf.text('Aard dienstverlening: ' + cg.aard_dienst, pageW / 2, y, { align: 'center' });
+      y += 4;
+    }
     y += 4;
 
     // ═══ RISICOBEOORDELING BOX ═══
@@ -1585,6 +1847,79 @@
     pdf.setFontSize(12);
     pdf.text((niveauLabel[niveau] || 'Onbekend').toUpperCase(), pageW / 2, y + 26, { align: 'center' });
     y += boxH + 8;
+
+    // ═══ CLIËNTIDENTIFICATIE (art. 33 Wwft) ═══
+    const hasIdPdf = cg.nationaliteit || cg.adres_straat || cg.adres_postcode || cg.id_document_type || cg.vertegenwoordiger_naam;
+    if (hasIdPdf) {
+      sectionTitle('Cli\u00ebntidentificatie (art. 33 Wwft)');
+      const idRows = [];
+      if (cg.nationaliteit) idRows.push(['Nationaliteit', cg.nationaliteit]);
+      if (cg.adres_straat) idRows.push(['Adres', cg.adres_straat]);
+      if (cg.adres_postcode || d.locatie) idRows.push(['Postcode/Plaats', (cg.adres_postcode || '') + ' ' + (d.locatie || '')]);
+      if (cg.id_document_type) {
+        let idVal = cg.id_document_type;
+        if (cg.id_document_nummer) idVal += ' \u2014 nr. ' + cg.id_document_nummer;
+        if (cg.id_document_geldig_tot) idVal += ' \u2014 geldig tot ' + cg.id_document_geldig_tot;
+        idRows.push(['Identificatiedocument', idVal]);
+      }
+      if (cg.vertegenwoordiger_naam) {
+        let vertVal = cg.vertegenwoordiger_naam;
+        if (cg.vertegenwoordiger_geboortedatum) vertVal += ' (' + cg.vertegenwoordiger_geboortedatum + ')';
+        idRows.push(['Vertegenwoordiger', vertVal]);
+      }
+      idRows.forEach(([label, val]) => {
+        checkPage(6);
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(102, 102, 102);
+        pdf.text(label + ':', marginL, y);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(51, 51, 51);
+        pdf.text(val, marginL + 40, y);
+        y += 4;
+      });
+      y += 2;
+    }
+
+    // ═══ UBO-GEGEVENS ═══
+    if (cg.ubos?.length > 0) {
+      sectionTitle('UBO-gegevens', cg.ubos.length);
+      cg.ubos.forEach(u => {
+        checkPage(6);
+        let uboLine = u.naam;
+        if (u.geboortedatum) uboLine += ' (' + u.geboortedatum + ')';
+        uboLine += ' \u2014 ' + (u.aard_belang || '');
+        if (u.percentage) uboLine += ' ' + u.percentage + '%';
+        writeText(uboLine, marginL, 9, [51, 51, 51]);
+      });
+      y += 2;
+    }
+
+    // ═══ PEP-SCREENING ═══
+    sectionTitle('PEP-screening');
+    if (a.is_pep === true) {
+      colorBar('PEP ge\u00efdentificeerd \u2014 ' + (a.pep_toelichting || 'Verscherpt cli\u00ebntonderzoek vereist.'), [192, 57, 43]);
+    } else {
+      colorBar('Geen PEP \u2014 ' + (a.pep_toelichting || 'Geen indicaties van PEP-status gevonden.'), [39, 174, 96]);
+    }
+
+    // ═══ CDD-NIVEAU ═══
+    const cddLabels = { vereenvoudigd: 'Vereenvoudigd cli\u00ebntonderzoek', standaard: 'Standaard cli\u00ebntonderzoek', verscherpt: 'Verscherpt cli\u00ebntonderzoek' };
+    if (a.cdd_niveau) {
+      sectionTitle('CDD-niveau');
+      const cddColor = a.cdd_niveau === 'verscherpt' ? [230, 126, 34] : [39, 174, 96];
+      let cddText = cddLabels[a.cdd_niveau] || a.cdd_niveau;
+      if (a.cdd_toelichting) cddText += ' \u2014 ' + a.cdd_toelichting;
+      colorBar(cddText, cddColor);
+    }
+
+    // ═══ HERKOMST MIDDELEN ═══
+    if (cg.herkomst_middelen || cg.herkomst_vermogen) {
+      sectionTitle('Herkomst middelen');
+      if (cg.herkomst_middelen) writeText('Source of funds: ' + cg.herkomst_middelen, marginL, 9, [51, 51, 51]);
+      if (cg.herkomst_vermogen) writeText('Source of wealth: ' + cg.herkomst_vermogen, marginL, 9, [51, 51, 51]);
+      y += 2;
+    }
 
     // ═══ SAMENVATTING ═══
     if (a.samenvatting) {
@@ -1906,7 +2241,38 @@
     $('kvkZoeken').checked = false;
     $('hercheckAan').checked = false;
     $('hercheckOpties').style.display = 'none';
+    // Reset Wwft art. 33 velden
+    $('aardDienst').value = '';
+    $('nationaliteit').value = '';
+    $('adresStraat').value = '';
+    $('adresPostcode').value = '';
+    $('idDocType').value = '';
+    $('idDocNummer').value = '';
+    $('idDocGeldigTot').value = '';
+    $('vertNaam').value = '';
+    $('vertGeboortedatum').value = '';
+    $('herkomstMiddelen').value = '';
+    $('herkomstVermogen').value = '';
+    // Reset UBO entries
+    const uboEntries = $('uboEntries');
+    while (uboEntries.children.length > 1) uboEntries.removeChild(uboEntries.lastChild);
+    const firstUbo = uboEntries.querySelector('.uboNaam');
+    if (firstUbo) firstUbo.value = '';
+    const firstUboDate = uboEntries.querySelector('.uboGeboortedatum');
+    if (firstUboDate) firstUboDate.value = '';
+    const firstUboPerc = uboEntries.querySelector('.uboPercentage');
+    if (firstUboPerc) firstUboPerc.value = '';
+    // Collapse sections
+    ['idToggle', 'vertToggle', 'uboToggle', 'herkomstToggle'].forEach(id => {
+      const el = $(id);
+      if (el) el.classList.remove('open');
+    });
+    ['idFields', 'vertFields', 'uboFields', 'herkomstFields'].forEach(id => {
+      const el = $(id);
+      if (el) el.classList.remove('visible');
+    });
     updateKvkMonitoringVisibility();
+    updateUboVisibility();
 
     // Reset progress
     progressPanel.classList.remove('visible');

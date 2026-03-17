@@ -9,7 +9,9 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { naam, geboortedatum, type, locatie, land, kvkZoeken, activatiecode, medewerker, dossiernummer, hercheck, hercheckEmail, kvkMonitoring } = req.body;
+  const { naam, geboortedatum, type, locatie, land, kvkZoeken, activatiecode, medewerker, dossiernummer, hercheck, hercheckEmail, kvkMonitoring,
+    aard_dienst, nationaliteit, adres_straat, adres_postcode, id_document_type, id_document_nummer, id_document_geldig_tot,
+    vertegenwoordiger_naam, vertegenwoordiger_geboortedatum, herkomst_middelen, herkomst_vermogen, ubos } = req.body;
 
   if (!naam) {
     return res.status(400).json({ error: 'Naam is verplicht.' });
@@ -187,6 +189,22 @@ module.exports = async function handler(req, res) {
     const kvkNummer = resultaten.kvk?.resultaten?.[0]?.kvkNummer || null;
 
     // Sla screening op in database (async, geen blokkade)
+    // Wwft art. 33 cliëntgegevens meenemen in resultaten object (voor rapport)
+    resultaten.clientgegevens = {
+      aard_dienst: aard_dienst || null,
+      nationaliteit: nationaliteit || null,
+      adres_straat: adres_straat || null,
+      adres_postcode: adres_postcode || null,
+      id_document_type: id_document_type || null,
+      id_document_nummer: id_document_nummer || null,
+      id_document_geldig_tot: id_document_geldig_tot || null,
+      vertegenwoordiger_naam: vertegenwoordiger_naam || null,
+      vertegenwoordiger_geboortedatum: vertegenwoordiger_geboortedatum || null,
+      herkomst_middelen: herkomst_middelen || null,
+      herkomst_vermogen: herkomst_vermogen || null,
+      ubos: ubos || null
+    };
+
     const screeningRecord = {
       naam,
       geboortedatum: geboortedatum || null,
@@ -326,6 +344,10 @@ Geef je analyse als JSON met exact deze structuur:
   "risico_score": 0-100,
   "samenvatting": "korte samenvatting in 2-3 zinnen",
   "wwft_oordeel": "beknopt oordeel vanuit Wwft-perspectief",
+  "is_pep": true | false,
+  "pep_toelichting": "toelichting waarom wel/niet PEP (altijd invullen)",
+  "cdd_niveau": "vereenvoudigd" | "standaard" | "verscherpt",
+  "cdd_toelichting": "korte uitleg waarom dit CDD-niveau van toepassing is",
   "bevindingen": [
     {
       "categorie": "sancties" | "rechtspraak" | "media" | "kvk" | "pep" | "overig",
@@ -344,6 +366,8 @@ Belangrijk:
 - Neem ALLEEN bevindingen op die daadwerkelijk relevant zijn voor het cliëntonderzoek
 - Als er geen negatieve of relevante resultaten zijn, geef dan risico_niveau "laag"
 - Sanctiehits zijn altijd "rood" ernst
+- PEP-check: beoordeel of de persoon een politiek prominent persoon is (of familielid/naaste geassocieerde van een PEP). Vul is_pep en pep_toelichting ALTIJD in.
+- CDD-niveau: "vereenvoudigd" alleen bij bewezen laag risico, "verscherpt" bij PEP, sanctiehits, hoog-risico land of andere rode vlaggen, anders "standaard"
 - Dit is een hulpmiddel, geen definitief oordeel
 - Antwoord ALLEEN met valid JSON, geen andere tekst`
         }]
@@ -373,6 +397,10 @@ function defaultAnalyse() {
     risico_score: -1,
     samenvatting: 'Analyse kon niet worden uitgevoerd. Beoordeel de resultaten handmatig.',
     wwft_oordeel: 'Automatische analyse niet beschikbaar.',
+    is_pep: false,
+    pep_toelichting: 'PEP-status kon niet automatisch worden bepaald. Beoordeel handmatig.',
+    cdd_niveau: 'standaard',
+    cdd_toelichting: 'Standaard CDD als fallback. Beoordeel of verscherpt onderzoek nodig is.',
     bevindingen: [],
     risico_uitleg: 'De AI-analyse kon niet worden voltooid. Controleer de individuele zoekresultaten.'
   };
