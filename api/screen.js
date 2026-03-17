@@ -76,8 +76,13 @@ module.exports = async function handler(req, res) {
 
     const sanctiesPromise = (async () => {
       try {
+        const params = new URLSearchParams({ name: naam, min_score: '75' });
+        if (geboortedatum) params.set('date_of_birth', geboortedatum);
+        if (type === 'rechtspersoon') params.set('entity_type', 'organization');
+        else if (type === 'natuurlijk_persoon' || type === 'ubo') params.set('entity_type', 'person');
+
         const resp = await fetch(
-          `https://api.sanctions.io/search/?name=${encodeURIComponent(naam)}&min_score=75`,
+          `https://api.sanctions.io/search/?${params.toString()}`,
           { headers: { 'Authorization': `Bearer ${process.env.SANCTIONS_API_KEY}`, 'Accept': 'application/json' } }
         );
         const data = await resp.json();

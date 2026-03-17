@@ -47,19 +47,23 @@ module.exports = async function handler(req, res) {
         });
       }
 
-      const { error: updateError } = await supabase
+      // Atomic update: voorkom race condition bij gelijktijdige requests
+      const { data: updated, error: updateError } = await supabase
         .from('activatiecodes')
         .update({ credits_gebruikt: record.credits_gebruikt + aantal })
-        .eq('code', code.toUpperCase());
+        .eq('code', code.toUpperCase())
+        .lt('credits_gebruikt', record.credits_totaal)
+        .select('credits_gebruikt, credits_totaal')
+        .single();
 
-      if (updateError) {
+      if (updateError || !updated) {
         console.error('Credit update error:', updateError);
-        return res.status(500).json({ error: 'Fout bij het afschrijven van credit.' });
+        return res.status(402).json({ error: 'Geen credits meer beschikbaar.', credits_over: 0 });
       }
 
       return res.status(200).json({
         geldig: true,
-        credits_over: creditsOver - aantal,
+        credits_over: updated.credits_totaal - updated.credits_gebruikt,
         credits_totaal: record.credits_totaal,
         bundel: record.bundel,
         geldig_tot: record.geldig_tot,

@@ -1100,6 +1100,8 @@
     html += `<br>Subject: <strong>${escapeHtml(data.naam)}</strong>`;
     if (data.geboortedatum) html += ` (${data.geboortedatum})`;
     if (data.locatie) html += ` — ${escapeHtml(data.locatie)}`;
+    const typeLabels = { natuurlijk_persoon: 'Natuurlijk persoon', rechtspersoon: 'Rechtspersoon', ubo: 'UBO' };
+    if (data.type) html += `<br>Type: ${typeLabels[data.type] || escapeHtml(data.type)}`;
     html += `</div>`;
 
     // Risk banner
@@ -1548,7 +1550,15 @@
     if (d.geboortedatum) subjectLine += ' (' + d.geboortedatum + ')';
     if (d.locatie) subjectLine += ' \u2014 ' + d.locatie;
     pdf.text(subjectLine, pageW / 2, y, { align: 'center' });
-    y += 8;
+    y += 4;
+    const typeLabels = { natuurlijk_persoon: 'Natuurlijk persoon', rechtspersoon: 'Rechtspersoon', ubo: 'UBO' };
+    if (d.type) {
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(102, 102, 102);
+      pdf.text('Type: ' + (typeLabels[d.type] || d.type), pageW / 2, y, { align: 'center' });
+      y += 4;
+    }
+    y += 4;
 
     // ═══ RISICOBEOORDELING BOX ═══
     checkPage(35);
@@ -1644,8 +1654,8 @@
         checkPage(7);
         pdf.setTextColor(51, 51, 51);
         pdf.setFontSize(8);
-        pdf.text((s.naam || '').substring(0, 40), marginL + 3, y);
-        pdf.text((s.lijst || '').substring(0, 40), marginL + 70, y);
+        pdf.text((s.naam || '').substring(0, 55), marginL + 3, y);
+        pdf.text((s.lijst || '').substring(0, 50), marginL + 70, y);
         pdf.text(s.score + '%', marginL + 140, y);
         pdf.setDrawColor(224, 221, 213);
         pdf.line(marginL, y + 1.5, pageW - marginR, y + 1.5);
@@ -1838,7 +1848,7 @@
       { naam: 'Sanctielijsten (EU, OFAC, VN via Sanctions.io)', url: 'https://sanctions.io' },
       { naam: 'Rechtspraak.nl', url: 'https://www.rechtspraak.nl' }
     ];
-    if (kvkList.length > 0 || d.resultaten?.kvk) {
+    if (kvkList.length > 0 || d.type === 'rechtspersoon' || d.type === 'ubo') {
       bronnen.push({ naam: 'Kamer van Koophandel (KvK API)', url: 'https://www.kvk.nl' });
     }
     if (nieuwsList.length > 0) {
