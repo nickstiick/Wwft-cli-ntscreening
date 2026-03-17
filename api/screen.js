@@ -339,15 +339,23 @@ async function stepSanctions(req, res) {
 
 // Herbruikbare sanctiescreening voor één naam
 async function screenSanctions(naam, geboortedatum, entityType) {
+  if (!process.env.SANCTIONS_API_KEY) {
+    console.error('SANCTIONS_API_KEY niet geconfigureerd');
+    return { resultaten: [], gecontroleerd: false };
+  }
   try {
     const params = new URLSearchParams({ name: naam, min_score: '75' });
     if (geboortedatum) params.set('date_of_birth', geboortedatum);
     if (entityType) params.set('entity_type', entityType);
-    const resp = await fetch(
-      `https://api.sanctions.io/search/?${params.toString()}`,
-      { headers: { 'Authorization': `Bearer ${process.env.SANCTIONS_API_KEY}`, 'Accept': 'application/json' } }
-    );
-    if (!resp.ok) throw new Error(`Sanctions.io HTTP ${resp.status}`);
+    const url = `https://api.sanctions.io/search/?${params.toString()}`;
+    const resp = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${process.env.SANCTIONS_API_KEY}`, 'Accept': 'application/json' },
+      signal: AbortSignal.timeout(10000) // 10s timeout
+    });
+    if (!resp.ok) {
+      const body = await resp.text().catch(() => '');
+      throw new Error(`Sanctions.io HTTP ${resp.status}: ${body.slice(0, 200)}`);
+    }
     const data = await resp.json();
     return {
       resultaten: (data.results || []).slice(0, 10).map(r => ({
