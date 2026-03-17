@@ -3,6 +3,7 @@
 
 const { serperGoogle, serperNews } = require('./_search');
 const supabase = require('./_supabase');
+const { bepaalLandenrisico } = require('./_landenrisico');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -95,32 +96,25 @@ module.exports = async function handler(req, res) {
     resultaten.queries.push({ type: 'sancties', query: naam, tijdstip: timestamp() });
 
     const sanctiesPromise = (async () => {
-      try {
-        const params = new URLSearchParams({ name: naam, min_score: '75' });
-        if (geboortedatum) params.set('date_of_birth', geboortedatum);
-        if (type === 'rechtspersoon') params.set('entity_type', 'organization');
-        else if (type === 'natuurlijk_persoon' || type === 'ubo') params.set('entity_type', 'person');
+      const entityType = type === 'rechtspersoon' ? 'organization' : 'person';
+      const hoofdResultaat = await screenSanctions(naam, geboortedatum, entityType);
 
-        const resp = await fetch(
-          `https://api.sanctions.io/search/?${params.toString()}`,
-          { headers: { 'Authorization': `Bearer ${process.env.SANCTIONS_API_KEY}`, 'Accept': 'application/json' } }
-        );
-        if (!resp.ok) throw new Error(`Sanctions.io HTTP ${resp.status}`);
-        const data = await resp.json();
-        return {
-          resultaten: (data.results || []).slice(0, 10).map(r => ({
-            naam: r.name,
-            lijst: r.list_name || r.source,
-            score: r.score,
-            type: r.entity_type,
-            details: r.remarks || r.additional_information || ''
-          })),
-          gecontroleerd: true
-        };
-      } catch (e) {
-        console.error('Sanctiescreening mislukt:', e.message);
-        return { resultaten: [], gecontroleerd: false };
+      // UBO's apart screenen (Wwft art. 24)
+      const uboResultaten = [];
+      if (Array.isArray(ubos)) {
+        const uboPromises = ubos.filter(u => u.naam?.trim()).map(async (ubo) => {
+          resultaten.queries.push({ type: 'sancties_ubo', query: ubo.naam, tijdstip: timestamp() });
+          const hits = await screenSanctions(ubo.naam, ubo.geboortedatum, 'person');
+          return { ubo_naam: ubo.naam, ubo_geboortedatum: ubo.geboortedatum || null, hits: hits.resultaten };
+        });
+        uboResultaten.push(...await Promise.all(uboPromises));
       }
+
+      return {
+        resultaten: hoofdResultaat.resultaten,
+        ubo_sancties: uboResultaten,
+        gecontroleerd: hoofdResultaat.gecontroleerd
+      };
     })();
 
     // ─── RECHTSPRAAK ────────────────────────────────────
@@ -198,6 +192,13 @@ module.exports = async function handler(req, res) {
     resultaten.rechtspraak = rechtspraakResult;
     resultaten.kvk = kvkResult;
 
+    // ─── LANDENRISICO (FATF/EU) ──────────────────────────
+    resultaten.landenrisico = bepaalLandenrisico(land);
+    // Check ook nationaliteit als die afwijkt van land
+    if (nationaliteit && nationaliteit.toLowerCase().trim() !== (land || '').toLowerCase().trim()) {
+      resultaten.landenrisico_nationaliteit = bepaalLandenrisico(nationaliteit);
+    }
+
     // ─── CLAUDE ANALYSE ─────────────────────────────────
     const analyse = await analyseMetClaude(naam, geboortedatum, type, locatie, resultaten);
 
@@ -260,14 +261,22 @@ module.exports = async function handler(req, res) {
       screeningRecord.tenant_id = req._tenantId;
     }
 
-    // Hercheck instellen
+    // Hercheck instellen — risico-gebaseerd interval (Wwft art. 25 lid 5)
+    // Hoog risico: minimaal elke 3 maanden, verhoogd: 6, laag: 12
     if (hercheck) {
+      const risicoInterval = { hoog: 3, verhoogd: 6, laag: 12 };
+      const gebruikerInterval = parseInt(hercheck) || 12;
+      const risicoNiveau = analyse.risico_niveau || 'laag';
+      const aanbevolenInterval = risicoInterval[risicoNiveau] || 12;
+      // Neem het strengste (kortste) interval van gebruiker en risico
+      const effectiefInterval = Math.min(gebruikerInterval, aanbevolenInterval);
+
       const hercheckDatum = new Date();
-      hercheckDatum.setMonth(hercheckDatum.getMonth() + (parseInt(hercheck) || 12));
+      hercheckDatum.setMonth(hercheckDatum.getMonth() + effectiefInterval);
       screeningRecord.hercheck_datum = hercheckDatum.toISOString().slice(0, 10);
       screeningRecord.hercheck_actief = true;
       screeningRecord.hercheck_email = hercheckEmail || null;
-      screeningRecord.hercheck_interval_maanden = parseInt(hercheck) || 12;
+      screeningRecord.hercheck_interval_maanden = effectiefInterval;
     }
 
     // Opslaan (fire-and-forget, fout hier mag de response niet blokkeren)
@@ -347,29 +356,56 @@ async function stepKvk(req, res) {
 }
 
 async function stepSanctions(req, res) {
-  const { naam, geboortedatum, type } = req.body;
+  const { naam, geboortedatum, type, ubos } = req.body;
   if (!naam) return res.status(400).json({ error: 'Naam is verplicht.' });
+  try {
+    // Screen hoofdsubject
+    const hoofdResultaat = await screenSanctions(naam, geboortedatum, type === 'rechtspersoon' ? 'organization' : 'person');
+
+    // Screen elke UBO apart tegen sanctielijsten (Wwft art. 24)
+    const uboResultaten = [];
+    if (Array.isArray(ubos)) {
+      const uboPromises = ubos.filter(u => u.naam?.trim()).map(async (ubo) => {
+        const hits = await screenSanctions(ubo.naam, ubo.geboortedatum, 'person');
+        return { ubo_naam: ubo.naam, ubo_geboortedatum: ubo.geboortedatum || null, hits: hits.resultaten };
+      });
+      const results = await Promise.all(uboPromises);
+      uboResultaten.push(...results);
+    }
+
+    return res.status(200).json({
+      resultaten: hoofdResultaat.resultaten,
+      ubo_sancties: uboResultaten,
+      gecontroleerd: hoofdResultaat.gecontroleerd
+    });
+  } catch (e) {
+    console.error('Sanctiescreening mislukt:', e.message);
+    return res.status(200).json({ resultaten: [], ubo_sancties: [], gecontroleerd: false });
+  }
+}
+
+// Herbruikbare sanctiescreening voor één naam
+async function screenSanctions(naam, geboortedatum, entityType) {
   try {
     const params = new URLSearchParams({ name: naam, min_score: '75' });
     if (geboortedatum) params.set('date_of_birth', geboortedatum);
-    if (type === 'rechtspersoon') params.set('entity_type', 'organization');
-    else if (type === 'natuurlijk_persoon' || type === 'ubo') params.set('entity_type', 'person');
+    if (entityType) params.set('entity_type', entityType);
     const resp = await fetch(
       `https://api.sanctions.io/search/?${params.toString()}`,
       { headers: { 'Authorization': `Bearer ${process.env.SANCTIONS_API_KEY}`, 'Accept': 'application/json' } }
     );
     if (!resp.ok) throw new Error(`Sanctions.io HTTP ${resp.status}`);
     const data = await resp.json();
-    return res.status(200).json({
+    return {
       resultaten: (data.results || []).slice(0, 10).map(r => ({
         naam: r.name, lijst: r.list_name || r.source, score: r.score,
         type: r.entity_type, details: r.remarks || r.additional_information || ''
       })),
       gecontroleerd: true
-    });
+    };
   } catch (e) {
-    console.error('Sanctiescreening mislukt:', e.message);
-    return res.status(200).json({ resultaten: [], gecontroleerd: false });
+    console.error('Sanctiescreening mislukt voor', naam, ':', e.message);
+    return { resultaten: [], gecontroleerd: false };
   }
 }
 
@@ -432,6 +468,12 @@ async function stepAnalyse(req, res) {
     ubos: ubos || null
   };
 
+  // Landenrisico (FATF/EU)
+  resultaten.landenrisico = bepaalLandenrisico(land);
+  if (nationaliteit && nationaliteit.toLowerCase().trim() !== (land || '').toLowerCase().trim()) {
+    resultaten.landenrisico_nationaliteit = bepaalLandenrisico(nationaliteit);
+  }
+
   const analyse = await analyseMetClaude(naam, geboortedatum, type, locatie, resultaten);
   const tijdstip = new Date().toISOString();
   const kvkNummer = resultaten.kvk?.resultaten?.[0]?.kvkNummer || null;
@@ -453,13 +495,20 @@ async function stepAnalyse(req, res) {
     if (codeRecord?.tenant_id) screeningRecord.tenant_id = codeRecord.tenant_id;
   }
 
+  // Hercheck — risico-gebaseerd interval (Wwft art. 25 lid 5)
   if (hercheck) {
+    const risicoInterval = { hoog: 3, verhoogd: 6, laag: 12 };
+    const gebruikerInterval = parseInt(hercheck) || 12;
+    const risicoNiveau = analyse.risico_niveau || 'laag';
+    const aanbevolenInterval = risicoInterval[risicoNiveau] || 12;
+    const effectiefInterval = Math.min(gebruikerInterval, aanbevolenInterval);
+
     const hercheckDatum = new Date();
-    hercheckDatum.setMonth(hercheckDatum.getMonth() + (parseInt(hercheck) || 12));
+    hercheckDatum.setMonth(hercheckDatum.getMonth() + effectiefInterval);
     screeningRecord.hercheck_datum = hercheckDatum.toISOString().slice(0, 10);
     screeningRecord.hercheck_actief = true;
     screeningRecord.hercheck_email = hercheckEmail || null;
-    screeningRecord.hercheck_interval_maanden = parseInt(hercheck) || 12;
+    screeningRecord.hercheck_interval_maanden = effectiefInterval;
   }
 
   let screeningId = null;
@@ -510,6 +559,11 @@ ${JSON.stringify(resultaten.nieuws.slice(0, 10), null, 2)}
 === SANCTIELIJSTEN ===
 Gecontroleerd: ${resultaten.sancties.gecontroleerd ? 'Ja' : 'Nee (fout bij ophalen)'}
 Hits: ${JSON.stringify(resultaten.sancties.resultaten, null, 2)}
+${resultaten.sancties.ubo_sancties?.length ? `\n=== UBO SANCTIESCREENING ===\n${JSON.stringify(resultaten.sancties.ubo_sancties, null, 2)}` : ''}
+
+=== LANDENRISICO (FATF/EU) ===
+Land: ${JSON.stringify(resultaten.landenrisico || {}, null, 2)}
+${resultaten.landenrisico_nationaliteit ? `Nationaliteit: ${JSON.stringify(resultaten.landenrisico_nationaliteit, null, 2)}` : ''}
 
 === RECHTSPRAAK ===
 ${JSON.stringify(resultaten.rechtspraak.resultaten || [], null, 2)}
@@ -527,9 +581,12 @@ Geef je analyse als JSON met exact deze structuur:
   "pep_toelichting": "toelichting waarom wel/niet PEP (altijd invullen)",
   "cdd_niveau": "vereenvoudigd" | "standaard" | "verscherpt",
   "cdd_toelichting": "korte uitleg waarom dit CDD-niveau van toepassing is",
+  "landenrisico_oordeel": "beoordeling van het landenrisico op basis van FATF/EU lijsten (altijd invullen)",
+  "ubo_risico_oordeel": "beoordeling van UBO-screening resultaten (altijd invullen, ook als er geen UBOs zijn)",
+  "hercheck_advies": "3 maanden" | "6 maanden" | "12 maanden" | "24 maanden",
   "bevindingen": [
     {
-      "categorie": "sancties" | "rechtspraak" | "media" | "kvk" | "pep" | "overig",
+      "categorie": "sancties" | "sancties_ubo" | "rechtspraak" | "media" | "kvk" | "pep" | "landenrisico" | "overig",
       "ernst": "groen" | "oranje" | "rood" | "grijs",
       "beschrijving": "korte beschrijving van de bevinding",
       "bron": "bronverwijzing"
@@ -544,9 +601,12 @@ Belangrijk:
 - NEGEER berichten die duidelijk NIET relevant zijn voor compliance/Wwft, zoals: sportverslagen, voetbalnieuws, entertainment, roddels, recepten, of berichten waarin de naam slechts terloops wordt genoemd zonder verband met financiële criminaliteit, fraude, witwassen, sancties, of andere Wwft-risico's
 - Neem ALLEEN bevindingen op die daadwerkelijk relevant zijn voor het cliëntonderzoek
 - Als er geen negatieve of relevante resultaten zijn, geef dan risico_niveau "laag"
-- Sanctiehits zijn altijd "rood" ernst
+- Sanctiehits zijn altijd "rood" ernst — ook sanctiehits op UBO's
+- UBO-screening: als een UBO op een sanctielijst staat, is dit ALTIJD "rood" en leidt tot risico_niveau "hoog". Vermeld welke UBO het betreft.
 - PEP-check: beoordeel of de persoon een politiek prominent persoon is (of familielid/naaste geassocieerde van een PEP). Vul is_pep en pep_toelichting ALTIJD in.
-- CDD-niveau: "vereenvoudigd" alleen bij bewezen laag risico, "verscherpt" bij PEP, sanctiehits, hoog-risico land of andere rode vlaggen, anders "standaard"
+- Landenrisico: als het land op de FATF zwarte lijst of EU sanctielijst staat → "hoog". FATF grijze lijst → minimaal "verhoogd". Voeg een bevinding toe met categorie "landenrisico".
+- CDD-niveau: "vereenvoudigd" alleen bij bewezen laag risico, "verscherpt" bij PEP, sanctiehits (inclusief UBO), hoog-risico land (FATF/EU), of andere rode vlaggen, anders "standaard"
+- hercheck_advies: baseer op risico — hoog→"3 maanden", verhoogd→"6 maanden", laag→"12 maanden"
 - Dit is een hulpmiddel, geen definitief oordeel
 - Antwoord ALLEEN met valid JSON, geen andere tekst`
         }]
