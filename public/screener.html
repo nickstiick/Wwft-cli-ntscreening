@@ -356,6 +356,40 @@
       .wizard-step:not(:last-child)::after { display: none; }
     }
 
+    /* ─── SANCTION DISMISS ────────────────── */
+    .sanction-hit {
+      padding: 12px;
+      margin-bottom: 8px;
+      background: #fdf0ef;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-family: sans-serif;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      transition: opacity 0.3s, transform 0.3s;
+    }
+    .sanction-hit.dismissed {
+      opacity: 0.4;
+      text-decoration: line-through;
+    }
+    .sanction-hit .hit-content { flex: 1; }
+    .sanction-dismiss-btn {
+      flex-shrink: 0;
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 4px 10px;
+      font-size: 11px;
+      font-family: sans-serif;
+      color: var(--text-light);
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .sanction-dismiss-btn:hover { border-color: var(--green); color: var(--green); }
+    .sanction-dismiss-btn.dismissed { border-color: var(--orange); color: var(--orange); }
+
     /* ─── PROGRESS ─────────────────────────── */
     .progress-panel {
       display: none;
@@ -1431,11 +1465,15 @@
     let html = '';
     if (data.resultaten?.length > 0) {
       html += `<div class="wizard-result-box" style="border-color:var(--red);">`;
-      html += `<div style="color:var(--red); font-weight:bold; margin-bottom:8px;">⚠ ${data.resultaten.length} sanctiehit(s) gevonden</div>`;
-      data.resultaten.forEach(s => {
-        html += `<div style="padding:8px; margin-bottom:6px; background:#fdf0ef; border-radius:var(--radius); font-size:13px;">`;
+      html += `<div style="color:var(--red); font-weight:bold; margin-bottom:4px;">⚠ ${data.resultaten.length} sanctiehit(s) gevonden</div>`;
+      html += `<div style="color:var(--text-light); font-size:12px; font-family:sans-serif; margin-bottom:12px;">Niet relevant? Markeer als false positive — dit wordt meegenomen in het rapport.</div>`;
+      data.resultaten.forEach((s, i) => {
+        html += `<div class="sanction-hit" id="sanctionHit${i}">`;
+        html += `<div class="hit-content">`;
         html += `<strong>${escapeHtml(s.naam)}</strong> — Score: ${s.score}%<br>`;
         html += `<span style="color:var(--text-light);">${escapeHtml(s.lijst || '')}${s.details ? ' — ' + escapeHtml(s.details) : ''}</span>`;
+        html += `</div>`;
+        html += `<button class="sanction-dismiss-btn" onclick="toggleSanctionDismiss(${i})">False positive</button>`;
         html += `</div>`;
       });
       html += `</div>`;
@@ -1449,6 +1487,25 @@
     }
     $('step3Results').innerHTML = html;
   }
+
+  // Track dismissed sanctions
+  wizardData.dismissedSancties = new Set();
+
+  window.toggleSanctionDismiss = function(index) {
+    const hit = document.getElementById('sanctionHit' + index);
+    const btn = hit.querySelector('.sanction-dismiss-btn');
+    if (wizardData.dismissedSancties.has(index)) {
+      wizardData.dismissedSancties.delete(index);
+      hit.classList.remove('dismissed');
+      btn.textContent = 'False positive';
+      btn.classList.remove('dismissed');
+    } else {
+      wizardData.dismissedSancties.add(index);
+      hit.classList.add('dismissed');
+      btn.textContent = 'Herstellen';
+      btn.classList.add('dismissed');
+    }
+  };
 
   // ── STEP 3 → 4: Search ──
   $('wizardStep3Prev').addEventListener('click', () => goToStep(2));
@@ -1540,10 +1597,19 @@
     $('step5Loading').style.display = 'block';
 
     // Combine all wizard data into resultaten
+    // Mark dismissed sanctions as false positives
+    const sanctieData = wizardData.sancties ? { ...wizardData.sancties } : {};
+    if (sanctieData.resultaten && wizardData.dismissedSancties?.size > 0) {
+      sanctieData.resultaten = sanctieData.resultaten.map((s, i) => ({
+        ...s,
+        false_positive: wizardData.dismissedSancties.has(i)
+      }));
+    }
+
     const resultaten = {
       google: wizardData.google,
       nieuws: wizardData.nieuws,
-      sancties: wizardData.sancties,
+      sancties: sanctieData,
       rechtspraak: wizardData.rechtspraak,
       kvk: wizardData.kvk,
       queries: wizardData.queries || []
@@ -2642,7 +2708,8 @@
       sancties: { resultaten: [], gecontroleerd: true },
       google: [], nieuws: [],
       rechtspraak: { resultaten: [] },
-      queries: []
+      queries: [],
+      dismissedSancties: new Set()
     };
     // Reset wizard panels
     document.querySelectorAll('.wizard-panel').forEach(p => p.classList.remove('active'));
