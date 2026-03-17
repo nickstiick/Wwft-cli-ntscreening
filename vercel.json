@@ -7,13 +7,16 @@
     "api/screen.js": {
       "maxDuration": 30
     },
-    "api/v1-screen.js": {
+    "api/v1.js": {
       "maxDuration": 30
     }
   },
   "rewrites": [
-    { "source": "/api/v1/screen", "destination": "/api/v1-screen" },
-    { "source": "/api/v1/screenings", "destination": "/api/v1-screenings" },
+    { "source": "/api/v1/screen", "destination": "/api/v1" },
+    { "source": "/api/v1/screenings", "destination": "/api/v1" },
+    { "source": "/api/checkout", "destination": "/api/payment" },
+    { "source": "/api/webhook", "destination": "/api/payment" },
+    { "source": "/api/kvk-mutatie", "destination": "/api/hercheck" },
     { "source": "/screener", "destination": "/screener.html" },
     { "source": "/betaald", "destination": "/betaald.html" },
     { "source": "/privacy-technisch", "destination": "/privacy-technisch.html" },
