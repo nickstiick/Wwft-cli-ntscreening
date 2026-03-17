@@ -1432,7 +1432,8 @@
       // Sanctielijsten konden niet worden gecontroleerd — toon alleen foutmelding
       html += `<div class="wizard-result-box" style="border-color:var(--orange);">`;
       html += `<div style="color:var(--orange); font-weight:bold;">Sanctielijsten konden niet worden gecontroleerd.</div>`;
-      html += `<div style="color:var(--text-light); font-size:12px; font-family:sans-serif; margin-top:4px;">Controleer of de Sanctions.io API-key geconfigureerd is of probeer het later opnieuw.</div>`;
+      const foutDetail = data.fout ? ` (${escapeHtml(data.fout)})` : '';
+      html += `<div style="color:var(--text-light); font-size:12px; font-family:sans-serif; margin-top:4px;">Controleer of de Sanctions.io API-key geconfigureerd is of probeer het later opnieuw.${foutDetail}</div>`;
       html += `</div>`;
     } else if (data.resultaten?.length > 0) {
       html += `<div class="wizard-result-box" style="border-color:var(--red);">`;

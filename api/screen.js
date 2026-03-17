@@ -331,7 +331,8 @@ async function stepSanctions(req, res) {
       resultaten: hoofdResultaat.resultaten,
       pep_resultaten: hoofdResultaat.pep_resultaten,
       ubo_sancties: uboResultaten,
-      gecontroleerd: hoofdResultaat.gecontroleerd
+      gecontroleerd: hoofdResultaat.gecontroleerd,
+      fout: hoofdResultaat.fout || null
     });
   } catch (e) {
     console.error('Sanctiescreening mislukt:', e.message);
@@ -343,10 +344,11 @@ async function stepSanctions(req, res) {
 async function screenSanctions(naam, geboortedatum, entityType) {
   if (!process.env.SANCTIONS_API_KEY) {
     console.error('SANCTIONS_API_KEY niet geconfigureerd');
-    return { resultaten: [], pep_resultaten: [], gecontroleerd: false };
+    return { resultaten: [], pep_resultaten: [], gecontroleerd: false, fout: 'API-key niet geconfigureerd' };
   }
+  const apiKey = process.env.SANCTIONS_API_KEY;
   const headers = {
-    'Authorization': `Bearer ${process.env.SANCTIONS_API_KEY}`,
+    'Authorization': `Bearer ${apiKey}`,
     'Accept': 'application/json; version=2.1'
   };
   const params = new URLSearchParams({ name: naam, data_source: 'ALL' });
@@ -360,10 +362,11 @@ async function screenSanctions(naam, geboortedatum, entityType) {
 
   try {
     // Sanctielijsten en PEP-lijsten parallel opvragen
+    const sanctieUrl = `https://api.sanctions.io/search?${params.toString()}`;
+    console.log('Sanctions.io request:', sanctieUrl.replace(apiKey, '***'));
+
     const [sanctieResp, pepResp] = await Promise.all([
-      fetch(`https://api.sanctions.io/search?${params.toString()}`, {
-        headers, signal: AbortSignal.timeout(10000)
-      }),
+      fetch(sanctieUrl, { headers, signal: AbortSignal.timeout(10000) }),
       fetch(`https://api.sanctions.io/pep-search?${params.toString()}`, {
         headers, signal: AbortSignal.timeout(10000)
       }).catch(e => {
@@ -372,9 +375,13 @@ async function screenSanctions(naam, geboortedatum, entityType) {
       })
     ]);
 
+    console.log('Sanctions.io response status:', sanctieResp.status, sanctieResp.statusText);
+
     if (!sanctieResp.ok) {
       const body = await sanctieResp.text().catch(() => '');
-      throw new Error(`Sanctions.io HTTP ${sanctieResp.status}: ${body.slice(0, 200)}`);
+      console.error('Sanctions.io fout body:', body.slice(0, 500));
+      const foutMsg = `HTTP ${sanctieResp.status}: ${body.slice(0, 100)}`;
+      return { resultaten: [], pep_resultaten: [], gecontroleerd: false, fout: foutMsg };
     }
     const sanctieData = await sanctieResp.json();
 
@@ -391,7 +398,7 @@ async function screenSanctions(naam, geboortedatum, entityType) {
     };
   } catch (e) {
     console.error('Sanctiescreening mislukt voor', naam, ':', e.message);
-    return { resultaten: [], pep_resultaten: [], gecontroleerd: false };
+    return { resultaten: [], pep_resultaten: [], gecontroleerd: false, fout: e.message };
   }
 }
 
