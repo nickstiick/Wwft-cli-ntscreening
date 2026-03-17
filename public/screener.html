@@ -1453,6 +1453,25 @@
       html += `<div style="color:var(--green); font-weight:bold;">✓ Geen treffers op sanctielijsten (EU, OFAC, VN)</div>`;
       html += `</div>`;
     }
+    // PEP-resultaten van sanctions.io
+    if (data.gecontroleerd && data.pep_resultaten?.length > 0) {
+      html += `<div style="margin-top:12px; font-weight:bold; font-size:13px; color:var(--text-light); font-family:sans-serif;">PEP-screening</div>`;
+      html += `<div class="wizard-result-box" style="border-color:var(--orange);">`;
+      html += `<div style="color:var(--orange); font-weight:bold; margin-bottom:4px;">⚠ ${data.pep_resultaten.length} PEP-hit(s) gevonden</div>`;
+      data.pep_resultaten.forEach(p => {
+        html += `<div style="margin:4px 0; padding:4px 8px; background:rgba(243,156,18,0.05); border-radius:4px; font-size:13px;">`;
+        html += `<strong>${escapeHtml(p.naam)}</strong> — Score: ${p.score}%`;
+        html += p.lijst ? ` — ${escapeHtml(p.lijst)}` : '';
+        html += p.details ? ` — ${escapeHtml(p.details)}` : '';
+        html += `</div>`;
+      });
+      html += `</div>`;
+    } else if (data.gecontroleerd) {
+      html += `<div style="margin-top:12px; font-weight:bold; font-size:13px; color:var(--text-light); font-family:sans-serif;">PEP-screening</div>`;
+      html += `<div class="wizard-result-box" style="border-color:var(--green);">`;
+      html += `<div style="color:var(--green); font-weight:bold;">✓ Geen treffers op PEP-lijsten</div>`;
+      html += `</div>`;
+    }
     // UBO sanctieresultaten (Wwft art. 24)
     if (data.ubo_sancties?.length > 0) {
       html += `<div style="margin-top:12px; font-weight:bold; font-size:13px; color:var(--text-light); font-family:sans-serif;">UBO-screening</div>`;

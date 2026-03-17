@@ -105,13 +105,14 @@ module.exports = async function handler(req, res) {
         const uboPromises = ubos.filter(u => u.naam?.trim()).map(async (ubo) => {
           resultaten.queries.push({ type: 'sancties_ubo', query: ubo.naam, tijdstip: timestamp() });
           const hits = await screenSanctions(ubo.naam, ubo.geboortedatum, 'person');
-          return { ubo_naam: ubo.naam, ubo_geboortedatum: ubo.geboortedatum || null, hits: hits.resultaten };
+          return { ubo_naam: ubo.naam, ubo_geboortedatum: ubo.geboortedatum || null, hits: hits.resultaten, pep_hits: hits.pep_resultaten };
         });
         uboResultaten.push(...await Promise.all(uboPromises));
       }
 
       return {
         resultaten: hoofdResultaat.resultaten,
+        pep_resultaten: hoofdResultaat.pep_resultaten,
         ubo_sancties: uboResultaten,
         gecontroleerd: hoofdResultaat.gecontroleerd
       };
@@ -320,7 +321,7 @@ async function stepSanctions(req, res) {
     if (Array.isArray(ubos)) {
       const uboPromises = ubos.filter(u => u.naam?.trim()).map(async (ubo) => {
         const hits = await screenSanctions(ubo.naam, ubo.geboortedatum, 'person');
-        return { ubo_naam: ubo.naam, ubo_geboortedatum: ubo.geboortedatum || null, hits: hits.resultaten };
+        return { ubo_naam: ubo.naam, ubo_geboortedatum: ubo.geboortedatum || null, hits: hits.resultaten, pep_hits: hits.pep_resultaten };
       });
       const results = await Promise.all(uboPromises);
       uboResultaten.push(...results);
@@ -328,6 +329,7 @@ async function stepSanctions(req, res) {
 
     return res.status(200).json({
       resultaten: hoofdResultaat.resultaten,
+      pep_resultaten: hoofdResultaat.pep_resultaten,
       ubo_sancties: uboResultaten,
       gecontroleerd: hoofdResultaat.gecontroleerd
     });
@@ -341,32 +343,55 @@ async function stepSanctions(req, res) {
 async function screenSanctions(naam, geboortedatum, entityType) {
   if (!process.env.SANCTIONS_API_KEY) {
     console.error('SANCTIONS_API_KEY niet geconfigureerd');
-    return { resultaten: [], gecontroleerd: false };
+    return { resultaten: [], pep_resultaten: [], gecontroleerd: false };
   }
+  const headers = {
+    'Authorization': `Bearer ${process.env.SANCTIONS_API_KEY}`,
+    'Accept': 'application/json; version=2.1'
+  };
+  const params = new URLSearchParams({ name: naam, data_source: 'ALL' });
+  if (geboortedatum) params.set('date_of_birth', geboortedatum);
+  if (entityType) params.set('entity_type', entityType);
+
+  const mapResults = (data) => (data.results || []).slice(0, 10).map(r => ({
+    naam: r.name, lijst: r.list_name || r.source, score: r.score,
+    type: r.entity_type, details: r.remarks || r.additional_information || ''
+  }));
+
   try {
-    const params = new URLSearchParams({ name: naam, min_score: '75' });
-    if (geboortedatum) params.set('date_of_birth', geboortedatum);
-    if (entityType) params.set('entity_type', entityType);
-    const url = `https://api.sanctions.io/search/?${params.toString()}`;
-    const resp = await fetch(url, {
-      headers: { 'Authorization': `Bearer ${process.env.SANCTIONS_API_KEY}`, 'Accept': 'application/json' },
-      signal: AbortSignal.timeout(10000) // 10s timeout
-    });
-    if (!resp.ok) {
-      const body = await resp.text().catch(() => '');
-      throw new Error(`Sanctions.io HTTP ${resp.status}: ${body.slice(0, 200)}`);
+    // Sanctielijsten en PEP-lijsten parallel opvragen
+    const [sanctieResp, pepResp] = await Promise.all([
+      fetch(`https://api.sanctions.io/search?${params.toString()}`, {
+        headers, signal: AbortSignal.timeout(10000)
+      }),
+      fetch(`https://api.sanctions.io/pep-search?${params.toString()}`, {
+        headers, signal: AbortSignal.timeout(10000)
+      }).catch(e => {
+        console.error('PEP-screening mislukt voor', naam, ':', e.message);
+        return null;
+      })
+    ]);
+
+    if (!sanctieResp.ok) {
+      const body = await sanctieResp.text().catch(() => '');
+      throw new Error(`Sanctions.io HTTP ${sanctieResp.status}: ${body.slice(0, 200)}`);
     }
-    const data = await resp.json();
+    const sanctieData = await sanctieResp.json();
+
+    let pepResultaten = [];
+    if (pepResp && pepResp.ok) {
+      const pepData = await pepResp.json();
+      pepResultaten = mapResults(pepData);
+    }
+
     return {
-      resultaten: (data.results || []).slice(0, 10).map(r => ({
-        naam: r.name, lijst: r.list_name || r.source, score: r.score,
-        type: r.entity_type, details: r.remarks || r.additional_information || ''
-      })),
+      resultaten: mapResults(sanctieData),
+      pep_resultaten: pepResultaten,
       gecontroleerd: true
     };
   } catch (e) {
     console.error('Sanctiescreening mislukt voor', naam, ':', e.message);
-    return { resultaten: [], gecontroleerd: false };
+    return { resultaten: [], pep_resultaten: [], gecontroleerd: false };
   }
 }
 
@@ -511,6 +536,7 @@ ${JSON.stringify(resultaten.nieuws.slice(0, 10), null, 2)}
 === SANCTIELIJSTEN ===
 Gecontroleerd: ${resultaten.sancties.gecontroleerd ? 'Ja' : 'Nee (fout bij ophalen)'}
 Hits: ${JSON.stringify(resultaten.sancties.resultaten, null, 2)}
+${resultaten.sancties.pep_resultaten?.length ? `\n=== PEP-LIJSTEN (sanctions.io) ===\nHits: ${JSON.stringify(resultaten.sancties.pep_resultaten, null, 2)}` : '\n=== PEP-LIJSTEN (sanctions.io) ===\nGeen PEP-hits gevonden.'}
 ${resultaten.sancties.ubo_sancties?.length ? `\n=== UBO SANCTIESCREENING ===\n${JSON.stringify(resultaten.sancties.ubo_sancties, null, 2)}` : ''}
 
 === LANDENRISICO (FATF/EU) ===
