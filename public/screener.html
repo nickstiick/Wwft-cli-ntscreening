@@ -625,7 +625,7 @@
         <label>&nbsp;</label>
         <div class="checkbox-group">
           <input type="checkbox" id="kvkZoeken">
-          <label for="kvkZoeken">KvK opzoeken <span style="font-size:11px; color:var(--gold); font-family:sans-serif;">(+1 credit)</span></label>
+          <label for="kvkZoeken">KvK opzoeken <span style="font-size:11px; color:var(--gold); font-family:sans-serif;">(inbegrepen)</span></label>
         </div>
         <div class="checkbox-group" style="margin-top:6px;">
           <input type="checkbox" id="hercheckAan">
@@ -826,8 +826,7 @@
 
   function updateSubmitBtnLabel() {
     if (submitBtn.disabled) return;
-    const kvkAan = $('kvkZoeken').checked;
-    submitBtn.textContent = kvkAan ? 'Screening starten (2 credits)' : 'Screening starten';
+    submitBtn.textContent = 'Screening starten (1 credit)';
   }
   // Check bij pagina-load
   if ($('type').value === 'rechtspersoon' || $('type').value === 'ubo') {
@@ -907,9 +906,8 @@
       isProef = true;
     }
 
-    // Bepaal aantal credits: 1 standaard + 1 extra voor KvK
-    const kvkAan = $('kvkZoeken').checked;
-    const creditAantal = kvkAan ? 2 : 1;
+    // Altijd 1 credit per screening (KvK inbegrepen)
+    const creditAantal = 1;
 
     // If not proef, deduct credit(s) server-side
     if (!isProef && activatiecode) {

@@ -35,15 +35,13 @@ module.exports = async function handler(req, res) {
 
     const creditsOver = record.credits_totaal - record.credits_gebruikt;
 
-    // Als gebruik=true, schrijf credits af (aantal: 1 standaard, 2 bij KvK)
+    // Als gebruik=true, schrijf 1 credit af per screening (KvK inbegrepen)
     if (gebruik) {
-      const aantal = Math.max(1, Math.min(parseInt(req.body.aantal) || 1, 5));
+      const aantal = 1;
 
       if (creditsOver < aantal) {
         return res.status(402).json({
-          error: aantal > 1
-            ? `Niet genoeg credits. U heeft ${creditsOver} credit(s), maar deze screening kost ${aantal} credits (inclusief KvK opzoeken).`
-            : 'Geen credits meer beschikbaar.',
+          error: 'Geen credits meer beschikbaar.',
           credits_over: creditsOver,
           koopUrl: '/'
         });

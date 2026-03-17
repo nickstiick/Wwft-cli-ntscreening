@@ -109,9 +109,9 @@ module.exports = async function handler(req, res) {
       }
     })();
 
-    // ─── KVK (optioneel, meerprijs) ──────────────────────
+    // ─── KVK (inbegrepen bij rechtspersoon/ubo) ──────────
     let kvkPromise = Promise.resolve({ resultaten: [], basisprofiel: null, vestigingsprofielen: [] });
-    if (kvkZoeken && (type === 'rechtspersoon' || type === 'ubo')) {
+    if (type === 'rechtspersoon' || type === 'ubo') {
       resultaten.queries.push({ type: 'kvk', query: naam, tijdstip: timestamp() });
       kvkPromise = (async () => {
         try {
