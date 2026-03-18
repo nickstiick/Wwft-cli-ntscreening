@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wwft-screening vergelijken — Dossier vs RegLab vs CDD on Demand</title>
+  <meta name="description" content="Vergelijk Dossier met RegLab, CDD on Demand en ComplianceWise. Ontdek welke Wwft-screeningoplossing het beste past bij uw kantoor qua prijs, functies en flexibiliteit.">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy: #1a1a2e;
+      --navy-light: #16213e;
+      --gold: #c9a84c;
+      --gold-light: #d4b85f;
+      --cream: #f8f7f4;
+      --text: #333;
+      --text-light: #666;
+      --border: #e0ddd5;
+      --radius: 8px;
+    }
+
+    body {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      color: var(--text);
+      background: var(--cream);
+      line-height: 1.7;
+    }
+
+    /* Navigation */
+    html { scroll-behavior: smooth; }
+    nav {
+      background: var(--navy);
+      padding: 16px 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .logo {
+      font-size: 22px;
+      font-weight: bold;
+      color: #fff;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      text-decoration: none;
+    }
+    .logo span { color: var(--gold); }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 0;
+    }
+    nav a {
+      color: rgba(255,255,255,0.8);
+      text-decoration: none;
+      font-size: 15px;
+      margin-left: 28px;
+      transition: color 0.2s;
+    }
+    nav a:hover { color: #fff; }
+    .mobile-toggle {
+      display: none;
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 24px;
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    /* Hero */
+    .hero {
+      background: var(--navy);
+      color: #fff;
+      padding: 80px 24px 100px;
+      text-align: center;
+    }
+    .hero h1 {
+      font-size: clamp(28px, 5vw, 48px);
+      font-weight: normal;
+      max-width: 700px;
+      margin: 0 auto 24px;
+      line-height: 1.3;
+    }
+    .hero h1 em {
+      color: var(--gold);
+      font-style: normal;
+    }
+    .hero p {
+      font-size: 18px;
+      color: rgba(255,255,255,0.7);
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* Comparison table */
+    .comparison {
+      max-width: 1100px;
+      margin: -40px auto 0;
+      padding: 0 24px;
+      position: relative;
+      z-index: 10;
+    }
+    .table-wrapper {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+    }
+    .comparison table {
+      width: 100%;
+      min-width: 700px;
+      border-collapse: collapse;
+      font-size: 15px;
+    }
+    .comparison thead th {
+      background: var(--navy);
+      color: #fff;
+      padding: 16px 14px;
+      text-align: left;
+      font-weight: bold;
+      font-size: 14px;
+      letter-spacing: 0.5px;
+      position: sticky;
+      top: 0;
+    }
+    .comparison thead th:first-child {
+      border-radius: var(--radius) 0 0 0;
+    }
+    .comparison thead th:last-child {
+      border-radius: 0 var(--radius) 0 0;
+    }
+    .comparison thead th.col-dossier {
+      background: var(--navy-light);
+      border-left: 3px solid var(--gold);
+      border-right: 3px solid var(--gold);
+      border-top: 3px solid var(--gold);
+      color: var(--gold);
+    }
+    .comparison tbody td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+      font-size: 14px;
+    }
+    .comparison tbody tr:last-child td {
+      border-bottom: none;
+    }
+    .comparison tbody tr:hover {
+      background: rgba(201,168,76,0.04);
+    }
+    .comparison tbody td:first-child {
+      font-weight: bold;
+      color: var(--navy);
+      white-space: nowrap;
+    }
+    .comparison tbody td.col-dossier {
+      background: rgba(201,168,76,0.06);
+      border-left: 3px solid var(--gold);
+      border-right: 3px solid var(--gold);
+      font-weight: bold;
+    }
+    .comparison tbody tr:last-child td.col-dossier {
+      border-bottom: 3px solid var(--gold);
+    }
+    .check {
+      color: #27ae60;
+      font-weight: bold;
+      font-size: 18px;
+    }
+    .cross {
+      color: #c0392b;
+      font-weight: bold;
+      font-size: 18px;
+    }
+    .partial {
+      color: #e67e22;
+      font-size: 13px;
+    }
+    .price-cell {
+      font-size: 14px;
+    }
+    .table-scroll-hint {
+      display: none;
+      text-align: center;
+      font-size: 13px;
+      color: var(--text-light);
+      padding: 12px 0 0;
+      font-style: italic;
+    }
+
+    /* Footnote */
+    .footnote {
+      max-width: 1100px;
+      margin: 16px auto 0;
+      padding: 0 24px;
+      font-size: 12px;
+      color: var(--text-light);
+      font-style: italic;
+    }
+
+    /* Why Dossier */
+    .why-dossier {
+      max-width: 1100px;
+      margin: 80px auto;
+      padding: 0 24px;
+      text-align: center;
+    }
+    .why-dossier h2 {
+      font-size: 28px;
+      color: var(--navy);
+      margin-bottom: 48px;
+    }
+    .usp-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 24px;
+    }
+    .usp-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      text-align: center;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .usp-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+    }
+    .usp-icon {
+      font-size: 32px;
+      margin-bottom: 16px;
+    }
+    .usp-card h3 {
+      font-size: 18px;
+      margin-bottom: 8px;
+      color: var(--navy);
+    }
+    .usp-card p {
+      font-size: 15px;
+      color: var(--text-light);
+    }
+
+    /* CTA */
+    .cta-section {
+      background: #fff;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 80px 24px;
+      text-align: center;
+    }
+    .cta-section h2 {
+      font-size: 28px;
+      color: var(--navy);
+      margin-bottom: 12px;
+    }
+    .cta-section p {
+      color: var(--text-light);
+      margin-bottom: 32px;
+      font-size: 16px;
+      max-width: 540px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .cta-buttons {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .cta-primary {
+      display: inline-block;
+      background: var(--gold);
+      color: var(--navy);
+      padding: 16px 40px;
+      border-radius: var(--radius);
+      font-size: 17px;
+      font-weight: bold;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .cta-primary:hover {
+      background: var(--gold-light);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(201,168,76,0.3);
+    }
+    .cta-primary:active { transform: translateY(0); }
+    .cta-secondary {
+      display: inline-block;
+      background: transparent;
+      color: var(--navy);
+      padding: 16px 40px;
+      border-radius: var(--radius);
+      font-size: 17px;
+      font-weight: bold;
+      text-decoration: none;
+      border: 2px solid var(--navy);
+      transition: all 0.2s;
+    }
+    .cta-secondary:hover {
+      background: var(--navy);
+      color: #fff;
+      transform: translateY(-2px);
+    }
+    .cta-secondary:active { transform: translateY(0); }
+
+    /* Footer */
+    footer {
+      background: var(--navy);
+      color: rgba(255,255,255,0.5);
+      text-align: center;
+      padding: 32px 24px;
+      font-size: 13px;
+    }
+    footer a {
+      color: rgba(255,255,255,0.7);
+      text-decoration: none;
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .hero { padding: 60px 20px 80px; }
+      .table-scroll-hint { display: block; }
+      .mobile-toggle { display: block; }
+      .nav-links {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: var(--navy);
+        flex-direction: column;
+        padding: 16px 24px;
+        border-top: 1px solid rgba(255,255,255,0.1);
+      }
+      .nav-links.open { display: flex; }
+      .nav-links a {
+        margin-left: 0;
+        padding: 10px 0;
+        font-size: 16px;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+      }
+      .nav-links a:last-child { border-bottom: none; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="/" class="logo">Dossier<span>.</span></a>
+    <button class="mobile-toggle" id="mobileToggle" aria-label="Menu">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="/">Terug naar home</a>
+      <a href="/#prijzen">Prijzen</a>
+      <a href="/screener">Screener openen</a>
+    </div>
+  </div>
+</nav>
+
+<section class="hero">
+  <h1>Dossier vs. <em>de rest</em></h1>
+  <p>Wwft-screening hoeft niet duur of ingewikkeld te zijn. Vergelijk de mogelijkheden en maak een weloverwogen keuze voor uw kantoor.</p>
+</section>
+
+<section class="comparison">
+  <div class="table-scroll-hint">Veeg naar links om alle kolommen te zien &rarr;</div>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th class="col-dossier">Dossier</th>
+          <th>RegLab</th>
+          <th>CDD on Demand</th>
+          <th>ComplianceWise</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Prijs per screening</td>
+          <td class="col-dossier price-cell">&euro;4,99 &ndash; &euro;9</td>
+          <td class="price-cell">vanaf &euro;15&ndash;25</td>
+          <td class="price-cell">vanaf &euro;12</td>
+          <td class="price-cell">vanaf &euro;10</td>
+        </tr>
+        <tr>
+          <td>Abonnement verplicht</td>
+          <td class="col-dossier"><span class="check">&#10003;</span> Nee</td>
+          <td>Ja (maandelijks)</td>
+          <td>Ja</td>
+          <td>Ja</td>
+        </tr>
+        <tr>
+          <td>Minimale afname</td>
+          <td class="col-dossier">5 rapporten</td>
+          <td>12 maanden</td>
+          <td>10 screenings</td>
+          <td>Jaarcontract</td>
+        </tr>
+        <tr>
+          <td>Sanctielijsten (EU, OFAC, VN)</td>
+          <td class="col-dossier"><span class="check">&#10003;</span></td>
+          <td><span class="check">&#10003;</span></td>
+          <td><span class="check">&#10003;</span></td>
+          <td><span class="check">&#10003;</span></td>
+        </tr>
+        <tr>
+          <td>PEP-screening</td>
+          <td class="col-dossier"><span class="check">&#10003;</span></td>
+          <td><span class="check">&#10003;</span></td>
+          <td><span class="check">&#10003;</span></td>
+          <td><span class="check">&#10003;</span></td>
+        </tr>
+        <tr>
+          <td>PEP-familieleden screening</td>
+          <td class="col-dossier"><span class="check">&#10003;</span></td>
+          <td><span class="check">&#10003;</span></td>
+          <td><span class="partial">Beperkt</span></td>
+          <td><span class="cross">&#10007;</span></td>
+        </tr>
+        <tr>
+          <td>UBO-screening</td>
+          <td class="col-dossier"><span class="check">&#10003;</span></td>
+          <td><span class="check">&#10003;</span></td>
+          <td><span class="check">&#10003;</span></td>
+          <td><span class="check">&#10003;</span></td>
+        </tr>
+        <tr>
+          <td>UBO-validatie KvK</td>
+          <td class="col-dossier"><span class="check">&#10003;</span></td>
+          <td><span class="check">&#10003;</span></td>
+          <td><span class="cross">&#10007;</span></td>
+          <td><span class="cross">&#10007;</span></td>
+        </tr>
+        <tr>
+          <td>Rechtspraak.nl</td>
+          <td class="col-dossier"><span class="check">&#10003;</span></td>
+          <td><span class="cross">&#10007;</span></td>
+          <td><span class="cross">&#10007;</span></td>
+          <td><span class="cross">&#10007;</span></td>
+        </tr>
+        <tr>
+          <td>KvK Handelsregister</td>
+          <td class="col-dossier"><span class="check">&#10003;</span></td>
+          <td><span class="check">&#10003;</span></td>
+          <td><span class="partial">Beperkt</span></td>
+          <td><span class="cross">&#10007;</span></td>
+        </tr>
+        <tr>
+          <td>Adverse media screening</td>
+          <td class="col-dossier"><span class="check">&#10003;</span> (Google + News)</td>
+          <td><span class="check">&#10003;</span></td>
+          <td><span class="check">&#10003;</span></td>
+          <td><span class="check">&#10003;</span></td>
+        </tr>
+        <tr>
+          <td>Landenrisico (FATF/EU)</td>
+          <td class="col-dossier"><span class="check">&#10003;</span></td>
+          <td><span class="check">&#10003;</span></td>
+          <td><span class="check">&#10003;</span></td>
+          <td><span class="check">&#10003;</span></td>
+        </tr>
+        <tr>
+          <td>AI-risicoanalyse</td>
+          <td class="col-dossier"><span class="check">&#10003;</span> (Claude)</td>
+          <td><span class="cross">&#10007;</span></td>
+          <td><span class="cross">&#10007;</span></td>
+          <td><span class="cross">&#10007;</span></td>
+        </tr>
+        <tr>
+          <td>Bewaarplicht-waarschuwing</td>
+          <td class="col-dossier"><span class="check">&#10003;</span></td>
+          <td><span class="check">&#10003;</span></td>
+          <td><span class="cross">&#10007;</span></td>
+          <td><span class="cross">&#10007;</span></td>
+        </tr>
+        <tr>
+          <td>Hercheck-planning</td>
+          <td class="col-dossier"><span class="check">&#10003;</span></td>
+          <td><span class="check">&#10003;</span></td>
+          <td><span class="check">&#10003;</span></td>
+          <td><span class="check">&#10003;</span></td>
+        </tr>
+        <tr>
+          <td>Rapport op uw kantoornaam</td>
+          <td class="col-dossier"><span class="check">&#10003;</span></td>
+          <td><span class="check">&#10003;</span></td>
+          <td><span class="cross">&#10007;</span></td>
+          <td><span class="cross">&#10007;</span></td>
+        </tr>
+        <tr>
+          <td>Privacy by design (geen dataopslag)</td>
+          <td class="col-dossier"><span class="check">&#10003;</span></td>
+          <td><span class="cross">&#10007;</span></td>
+          <td><span class="cross">&#10007;</span></td>
+          <td><span class="cross">&#10007;</span></td>
+        </tr>
+        <tr>
+          <td>Doelgroep</td>
+          <td class="col-dossier">Alle Wwft-plichtigen</td>
+          <td>Notarissen</td>
+          <td>Breed</td>
+          <td>Accountants</td>
+        </tr>
+        <tr>
+          <td>Geschikt voor klein kantoor (1&ndash;5 pers.)</td>
+          <td class="col-dossier"><span class="check">&#10003;&#10003;&#10003;</span></td>
+          <td><span class="cross">&#10007;</span> (te duur)</td>
+          <td><span class="check">&#10003;</span></td>
+          <td><span class="check">&#10003;</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="footnote">Prijzen zijn indicatief op basis van publiek beschikbare informatie (maart 2026).</div>
+</section>
+
+<section class="why-dossier">
+  <h2>Waarom Dossier?</h2>
+  <div class="usp-grid">
+    <div class="usp-card">
+      <div class="usp-icon">&#128176;</div>
+      <h3>Betaalbaar zonder abonnement</h3>
+      <p>Vanaf &euro;4,99 per screening. Geen maandelijkse verplichtingen, geen jaarcontract. U koopt een bundel en gebruikt die wanneer het u uitkomt.</p>
+    </div>
+    <div class="usp-card">
+      <div class="usp-icon">&#129302;</div>
+      <h3>AI-risicoanalyse</h3>
+      <p>Enige aanbieder met AI-gestuurde risicoanalyse. Alle bronresultaten worden automatisch beoordeeld op relevantie en risico. U houdt het eindoordeel.</p>
+    </div>
+    <div class="usp-card">
+      <div class="usp-icon">&#128274;</div>
+      <h3>Privacy by design</h3>
+      <p>Wij slaan geen cli&euml;ntgegevens op. Geen namen, geen resultaten, geen dossiers op onze servers. Uw data blijft bij u, waar het hoort.</p>
+    </div>
+    <div class="usp-card">
+      <div class="usp-icon">&#9878;</div>
+      <h3>Breedste brondekking</h3>
+      <p>Enige aanbieder die Rechtspraak.nl, KvK, sanctielijsten, PEP-registers, adverse media &eacute;n AI-analyse combineert in &eacute;&eacute;n rapport.</p>
+    </div>
+  </div>
+</section>
+
+<section class="cta-section">
+  <h2>Klaar om te vergelijken in de praktijk?</h2>
+  <p>Uw eerste screening is gratis. Oordeel zelf of Dossier past bij uw kantoor.</p>
+  <div class="cta-buttons">
+    <a href="/screener" class="cta-primary">Probeer gratis</a>
+    <a href="/#prijzen" class="cta-secondary">Bundel kopen</a>
+  </div>
+</section>
+
+<footer>
+  <p>Dossier is een hulpmiddel bij het cli&euml;ntonderzoek op grond van de Wwft. Het vervangt niet de beoordelingsplicht van de Wwft-plichtige instelling.</p>
+  <p style="margin-top: 12px;">&copy; 2026 Dossier &middot; <a href="/privacy-technisch">Privacy &amp; techniek</a> &middot; <a href="mailto:info@dossier.nl">Contact</a></p>
+</footer>
+
+<script>
+(function() {
+  // Mobile menu
+  var mobileToggle = document.getElementById('mobileToggle');
+  var navLinks = document.getElementById('navLinks');
+  mobileToggle.addEventListener('click', function() {
+    navLinks.classList.toggle('open');
+    mobileToggle.textContent = navLinks.classList.contains('open') ? '\u2715' : '\u2630';
+  });
+  // Close on link click
+  navLinks.querySelectorAll('a').forEach(function(a) {
+    a.addEventListener('click', function() {
+      navLinks.classList.remove('open');
+      mobileToggle.textContent = '\u2630';
+    });
+  });
+})();
+</script>
+
+</body>
+</html>
