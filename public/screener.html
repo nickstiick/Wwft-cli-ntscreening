@@ -2743,7 +2743,7 @@
     }
 
     // ═══ LANDENRISICO (FATF/EU) ═══
-    const lr = r.landenrisico;
+    const lr = d.resultaten?.landenrisico;
     if (lr) {
       sectionTitle('Landenrisico (FATF/EU)');
       if (lr.risico === 'hoog') {
@@ -2755,16 +2755,16 @@
       }
       if (a.landenrisico_oordeel) writeText(a.landenrisico_oordeel, marginL, 9, [102, 102, 102]);
     }
-    if (r.landenrisico_nationaliteit && r.landenrisico_nationaliteit.risico !== 'laag') {
-      const lrn = r.landenrisico_nationaliteit;
+    if (d.resultaten?.landenrisico_nationaliteit && d.resultaten.landenrisico_nationaliteit.risico !== 'laag') {
+      const lrn = d.resultaten.landenrisico_nationaliteit;
       const lrnColor = lrn.risico === 'hoog' ? [192, 57, 43] : [230, 126, 34];
       colorBar('Nationaliteit: ' + (lrn.toelichting || ''), lrnColor);
     }
 
     // ═══ UBO-SANCTIESCREENING ═══
-    if (r.sancties?.ubo_sancties?.length > 0) {
-      sectionTitle('UBO-sanctiescreening', r.sancties.ubo_sancties.length);
-      r.sancties.ubo_sancties.forEach(ubo => {
+    if (d.resultaten?.sancties?.ubo_sancties?.length > 0) {
+      sectionTitle('UBO-sanctiescreening', d.resultaten.sancties.ubo_sancties.length);
+      d.resultaten.sancties.ubo_sancties.forEach(ubo => {
         if (ubo.hits?.length > 0) {
           colorBar('UBO "' + ubo.ubo_naam + '": ' + ubo.hits.length + ' sanctiehit(s) \u2014 ' + ubo.hits.map(h => h.naam + ' (' + h.score + '%)').join(', '), [192, 57, 43]);
         } else {
