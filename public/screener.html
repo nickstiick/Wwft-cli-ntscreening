@@ -839,7 +839,7 @@
         <input type="text" id="naam" placeholder="Bijv. Jan de Vries of Bakker B.V." required>
         <div class="field-error" id="naamError">Vul de naam in van de persoon of organisatie die u wilt screenen.</div>
       </div>
-      <div class="form-group">
+      <div class="form-group" id="geboortedatumGroup">
         <label for="geboortedatum">Geboortedatum <span class="help-tip" data-tip="Niet verplicht, maar helpt om de juiste persoon te vinden">?</span></label>
         <input type="date" id="geboortedatum">
       </div>
@@ -863,16 +863,24 @@
         <label for="aardDienst">Aard zakelijke relatie *</label>
         <select id="aardDienst" required>
           <option value="">— Selecteer —</option>
-          <option value="Samenstellingsopdracht">Samenstellingsopdracht</option>
-          <option value="Controle/audit">Controle/audit</option>
-          <option value="Belastingaangifte">Belastingaangifte</option>
-          <option value="Juridisch advies">Juridisch advies</option>
-          <option value="Notariële dienstverlening">Notariële dienstverlening</option>
-          <option value="Financieel advies">Financieel advies</option>
-          <option value="Vastgoedtransactie">Vastgoedtransactie</option>
-          <option value="Koopovereenkomst">Koopovereenkomst</option>
-          <option value="Hypotheekadvies">Hypotheekadvies</option>
-          <option value="Administratieve dienstverlening">Administratieve dienstverlening</option>
+          <optgroup label="Notarieel">
+            <option value="Notariële dienstverlening">Notariële dienstverlening (algemeen)</option>
+            <option value="Notarieel — vastgoed (levering)">Vastgoed — levering</option>
+            <option value="Notarieel — vastgoed (hypotheek)">Vastgoed — hypotheek</option>
+            <option value="Notarieel — ondernemingsrecht">Ondernemingsrecht (oprichting/statutenwijziging)</option>
+            <option value="Notarieel — familierecht">Familierecht (testament/huwelijksvoorwaarden)</option>
+          </optgroup>
+          <optgroup label="Financieel / juridisch">
+            <option value="Samenstellingsopdracht">Samenstellingsopdracht</option>
+            <option value="Controle/audit">Controle/audit</option>
+            <option value="Belastingaangifte">Belastingaangifte</option>
+            <option value="Juridisch advies">Juridisch advies</option>
+            <option value="Financieel advies">Financieel advies</option>
+            <option value="Vastgoedtransactie">Vastgoedtransactie</option>
+            <option value="Koopovereenkomst">Koopovereenkomst</option>
+            <option value="Hypotheekadvies">Hypotheekadvies</option>
+            <option value="Administratieve dienstverlening">Administratieve dienstverlening</option>
+          </optgroup>
           <option value="Overig">Overig</option>
         </select>
         <div class="field-error" id="aardDienstError">Selecteer de aard van de zakelijke relatie.</div>
@@ -1000,7 +1008,7 @@
 
       <!-- Herkomst middelen -->
       <div class="form-group full collapsible-section">
-        <div class="section-toggle" id="herkomstToggle">Herkomst middelen (bij verhoogd risico)</div>
+        <div class="section-toggle" id="herkomstToggle">Herkomst middelen (indien bekend)</div>
         <div class="section-fields form-grid" id="herkomstFields">
           <div class="form-group full">
             <label for="herkomstMiddelen">Herkomst middelen (source of funds)</label>
@@ -1069,7 +1077,7 @@
   <!-- Wizard Step 3: Sancties -->
   <div class="wizard-panel screen-form" id="wizardStep3" data-wizard="3">
     <h2>Stap 3 — Sanctielijsten &amp; PEP</h2>
-    <p style="font-size:13px; color:var(--text-light); font-family:sans-serif; margin-bottom:16px; margin-top:-12px;">We controleren uw cliënt tegen EU-, OFAC- en VN-sanctielijsten en PEP-databases. Niet-relevante treffers kunt u als false positive markeren.</p>
+    <p style="font-size:13px; color:var(--text-light); font-family:sans-serif; margin-bottom:16px; margin-top:-12px;">We controleren uw cliënt tegen EU-, OFAC- en VN-sanctielijsten en PEP-databases. Niet-relevante treffers kunt u markeren als niet van toepassing.</p>
     <div id="step3Content">
       <div class="wizard-loading" id="step3Loading" style="display:none;">
         <div class="spinner"></div><br>Sanctielijsten worden gecontroleerd (EU, OFAC, VN)...<br><span style="font-size:12px; color:#aaa;">Duurt meestal 5–15 seconden</span>
@@ -1170,6 +1178,18 @@
     validateCode(activatiecode, false);
   }
 
+  // Herstel whitelabel-gegevens uit localStorage
+  ['kantoorNaam', 'medewerker', 'kantoorLogo', 'kantoorKleur'].forEach(id => {
+    const saved = localStorage.getItem('dossier_' + id);
+    if (saved && $(id)) $(id).value = saved;
+  });
+  // Sla whitelabel-gegevens op bij wijziging
+  ['kantoorNaam', 'medewerker', 'kantoorLogo', 'kantoorKleur'].forEach(id => {
+    const el = $(id);
+    if (el) el.addEventListener('change', () => localStorage.setItem('dossier_' + id, el.value));
+    if (el && el.type === 'text') el.addEventListener('input', () => localStorage.setItem('dossier_' + id, el.value));
+  });
+
   // Whitelabel toggle
   $('whitelabelToggle').addEventListener('click', function() {
     this.classList.toggle('open');
@@ -1202,10 +1222,13 @@
 
   // UBO section visibility (alleen bij rechtspersoon)
   function updateUboVisibility() {
-    const isRP = $('type').value === 'rechtspersoon';
+    const typeVal = $('type').value;
+    const isRP = typeVal === 'rechtspersoon';
     $('uboSection').style.display = isRP ? 'block' : 'none';
     const navUbo = $('navUbo');
     if (navUbo) navUbo.style.display = isRP ? 'inline-block' : 'none';
+    // Verberg geboortedatum bij rechtspersoon (een BV heeft geen geboortedatum)
+    $('geboortedatumGroup').style.display = isRP ? 'none' : 'block';
   }
   $('type').addEventListener('change', updateUboVisibility);
   updateUboVisibility();
@@ -1630,14 +1653,14 @@
     } else if (data.resultaten?.length > 0) {
       html += `<div class="wizard-result-box" style="border-color:var(--red);">`;
       html += `<div style="color:var(--red); font-weight:bold; margin-bottom:4px;">⚠ ${data.resultaten.length} sanctiehit(s) gevonden</div>`;
-      html += `<div style="color:var(--text-light); font-size:12px; font-family:sans-serif; margin-bottom:12px;">Niet relevant? Markeer als false positive — dit wordt meegenomen in het rapport.</div>`;
+      html += `<div style="color:var(--text-light); font-size:12px; font-family:sans-serif; margin-bottom:12px;">Niet relevant? Markeer als niet van toepassing — dit wordt meegenomen in het rapport.</div>`;
       data.resultaten.forEach((s, i) => {
         html += `<div class="sanction-hit" id="sanctionHit${i}">`;
         html += `<div class="hit-content">`;
         html += `<strong>${escapeHtml(s.naam)}</strong> — Score: ${s.score}%<br>`;
         html += `<span style="color:var(--text-light);">${escapeHtml(s.lijst || '')}${s.details ? ' — ' + escapeHtml(s.details) : ''}</span>`;
         html += `</div>`;
-        html += `<button class="sanction-dismiss-btn" onclick="toggleSanctionDismiss(${i})">False positive</button>`;
+        html += `<button class="sanction-dismiss-btn" onclick="toggleSanctionDismiss(${i})">Niet van toepassing</button>`;
         html += `</div>`;
       });
       html += `</div>`;
@@ -1697,7 +1720,7 @@
     if (wizardData.dismissedSancties.has(index)) {
       wizardData.dismissedSancties.delete(index);
       hit.classList.remove('dismissed');
-      btn.textContent = 'False positive';
+      btn.textContent = 'Niet van toepassing';
       btn.classList.remove('dismissed');
     } else {
       wizardData.dismissedSancties.add(index);
@@ -2022,17 +2045,17 @@
       html += `</div>`;
     }
 
-    // Rapport acties
-    html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding:14px 18px; background:var(--cream); border:1px solid var(--border); border-radius:var(--radius); font-family:sans-serif;">`;
-    html += `<div style="font-size:13px; color:var(--text-light);">Screening voltooid voor <strong style="color:var(--navy);">${escapeHtml(data.naam)}</strong></div>`;
-    html += `<button onclick="resetScreening()" style="padding:8px 18px; background:var(--navy); color:#fff; border:none; border-radius:var(--radius); font-family:inherit; font-size:13px; cursor:pointer; font-weight:bold;">Nieuwe screening</button>`;
-    html += `</div>`;
-
     // Risk banner
     html += `<div class="risk-banner ${niveauClass}">`;
     html += `<div class="risk-niveau">Risicobeoordeling</div>`;
     if (a.risico_score >= 0) html += `<div class="risk-score">${a.risico_score}</div>`;
     html += `<div class="risk-label">${niveauLabel[niveauClass] || 'Onbekend'}</div>`;
+    html += `</div>`;
+
+    // Rapport acties (na risicobanner, zodat resultaat eerst zichtbaar is)
+    html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding:14px 18px; background:var(--cream); border:1px solid var(--border); border-radius:var(--radius); font-family:sans-serif;">`;
+    html += `<div style="font-size:13px; color:var(--text-light);">Screening voltooid voor <strong style="color:var(--navy);">${escapeHtml(data.naam)}</strong></div>`;
+    html += `<button onclick="resetScreening()" style="padding:8px 18px; background:var(--navy); color:#fff; border:none; border-radius:var(--radius); font-family:inherit; font-size:13px; cursor:pointer; font-weight:bold;">Nieuwe screening</button>`;
     html += `</div>`;
 
     // PEP-conclusie
@@ -2181,7 +2204,7 @@
         if (s.score) html += `<div><strong>Match score:</strong> ${s.score}%</div>`;
         if (s.details) html += `<div><strong>Reden:</strong> ${escapeHtml(s.details)}</div>`;
         html += `</div>`;
-        // False positive note (hidden)
+        // Niet van toepassing note (hidden)
         html += `<div id="${sid}-fp" style="display:none; margin-top:8px;">`;
         html += `<textarea id="${sid}-fp-reden" placeholder="Toelichting waarom deze treffer niet van toepassing is op uw cliënt" style="width:100%; padding:8px; border:1px solid var(--border); border-radius:4px; font-family:inherit; font-size:13px; resize:vertical; min-height:60px;"></textarea>`;
         html += `<button onclick="confirmFalsePositive('${sid}')" style="margin-top:6px; font-size:12px; font-family:sans-serif; background:var(--navy); color:#fff; border:none; padding:6px 14px; border-radius:4px; cursor:pointer;">Bevestigen</button>`;
