@@ -161,8 +161,8 @@
     }
     .form-group.full { grid-column: 1 / -1; }
     .form-group label {
-      font-size: 13px;
-      color: var(--text-light);
+      font-size: 14px;
+      color: var(--text);
       margin-bottom: 5px;
       font-family: sans-serif;
     }
@@ -179,7 +179,7 @@
     .form-group select:focus {
       outline: none;
       border-color: var(--navy);
-      box-shadow: 0 0 0 3px rgba(26,26,46,0.08);
+      box-shadow: 0 0 0 3px rgba(26,26,46,0.18);
     }
     .form-group input.input-error,
     .form-group select.input-error {
@@ -765,7 +765,8 @@
       font-size: 12px;
       padding: 6px 10px;
       border-radius: 4px;
-      white-space: nowrap;
+      white-space: normal;
+      max-width: 260px;
       z-index: 10;
       pointer-events: none;
     }
@@ -823,8 +824,8 @@
   <!-- Wizard Step Bar -->
   <div class="wizard-bar" id="wizardBar">
     <div class="wizard-step active" data-ws="1"><span class="step-num">1</span> Gegevens</div>
-    <div class="wizard-step" data-ws="2"><span class="step-num">2</span> KvK</div>
-    <div class="wizard-step" data-ws="3"><span class="step-num">3</span> Sancties</div>
+    <div class="wizard-step" data-ws="2"><span class="step-num">2</span> KvK <span class="help-tip" data-tip="Kamer van Koophandel — we controleren of het bedrijf bestaat en actief is">?</span></div>
+    <div class="wizard-step" data-ws="3"><span class="step-num">3</span> Sancties <span class="help-tip" data-tip="We controleren of uw cliënt op internationale sanctielijsten of PEP-lijsten (politiek prominente personen) voorkomt">?</span></div>
     <div class="wizard-step" data-ws="4"><span class="step-num">4</span> Bronnen</div>
     <div class="wizard-step" data-ws="5"><span class="step-num">5</span> Rapport</div>
   </div>
@@ -888,7 +889,7 @@
       <div class="form-group">
         <label>&nbsp;</label>
         <div class="checkbox-group">
-          <input type="checkbox" id="kvkZoeken">
+          <input type="checkbox" id="kvkZoeken" checked>
           <label for="kvkZoeken">KvK opzoeken <span style="font-size:11px; color:var(--gold); font-family:sans-serif;">(inbegrepen)</span></label>
         </div>
         <div class="checkbox-group" style="margin-top:6px;">
@@ -975,7 +976,7 @@
 
       <!-- UBO-gegevens (bij rechtspersoon) -->
       <div class="form-group full collapsible-section" id="uboSection" style="display:none;">
-        <div class="section-toggle" id="uboToggle">UBO-gegevens (uiteindelijk belanghebbenden)</div>
+        <div class="section-toggle" id="uboToggle">UBO-gegevens <span class="help-tip" data-tip="UBO = uiteindelijk belanghebbende. De persoon die meer dan 25% eigendom of zeggenschap heeft in het bedrijf.">?</span></div>
         <div class="section-fields" id="uboFields">
           <div id="uboEntries">
             <div class="ubo-entry form-grid" data-ubo="0">
@@ -1049,6 +1050,9 @@
       </div>
     </div>
 
+    <div id="proefBanner" style="display:none; padding:12px 16px; background:#fef9ec; border:1px solid var(--orange); border-radius:var(--radius); margin-top:16px; font-size:13px; font-family:sans-serif; color:var(--orange);">
+      <strong>Proefscreening:</strong> U gebruikt uw gratis proefscreening. Het rapport bevat een watermerk en is niet geldig als officieel Wwft-dossier. <a href="/#prijzen" style="color:var(--navy); font-weight:bold;">Activatiecode kopen</a>
+    </div>
     <div class="wizard-nav">
       <span></span>
       <button class="btn-next" id="wizardStep1Next">Start screening &rarr;</button>
@@ -1077,7 +1081,7 @@
   <!-- Wizard Step 3: Sancties -->
   <div class="wizard-panel screen-form" id="wizardStep3" data-wizard="3">
     <h2>Stap 3 — Sanctielijsten &amp; PEP</h2>
-    <p style="font-size:13px; color:var(--text-light); font-family:sans-serif; margin-bottom:16px; margin-top:-12px;">We controleren uw cliënt tegen EU-, OFAC- en VN-sanctielijsten en PEP-databases. Niet-relevante treffers kunt u markeren als niet van toepassing.</p>
+    <p style="font-size:13px; color:var(--text-light); font-family:sans-serif; margin-bottom:16px; margin-top:-12px;">We controleren of uw cliënt voorkomt op sanctielijsten (personen/bedrijven waarmee geen zaken gedaan mogen worden) en PEP-lijsten (politiek prominente personen die extra controle vereisen). Niet-relevante treffers kunt u markeren als niet van toepassing.</p>
     <div id="step3Content">
       <div class="wizard-loading" id="step3Loading" style="display:none;">
         <div class="spinner"></div><br>Sanctielijsten worden gecontroleerd (EU, OFAC, VN)...<br><span style="font-size:12px; color:#aaa;">Duurt meestal 5–15 seconden</span>
@@ -1176,6 +1180,9 @@
   if (activatiecode) {
     codeInput.value = activatiecode;
     validateCode(activatiecode, false);
+  } else if (!proefGebruikt) {
+    // Toon proefscreening-banner als er geen code is
+    $('proefBanner').style.display = 'block';
   }
 
   // Herstel whitelabel-gegevens uit localStorage
@@ -1304,6 +1311,7 @@
       activationBar.classList.add('activated');
       activationStatus.textContent = `Geactiveerd: ${credits} van ${data.credits_totaal} credits beschikbaar (${data.bundel})`;
       activationStatus.classList.add('visible');
+      $('proefBanner').style.display = 'none';
       updateCreditBadge();
 
       if (credits <= 0) {
@@ -1410,6 +1418,14 @@
   };
 
   // Wizard bar is now always visible
+
+  // Enter-toets op stap 1 formulier triggert "Start screening"
+  $('screenForm').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+      e.preventDefault();
+      $('wizardStep1Next').click();
+    }
+  });
 
   // Clear validation on typing/change
   $('naam').addEventListener('input', function() {
@@ -2079,6 +2095,25 @@
       if (a.cdd_toelichting) html += ` — ${escapeHtml(a.cdd_toelichting)}`;
       html += `</div></div></div>`;
     }
+
+    // Actie-advies blok (wat moet u doen?)
+    html += `<div class="result-section" style="background:var(--cream); border:1px solid var(--border); border-radius:var(--radius); padding:16px 20px;">`;
+    html += `<h3 style="margin-bottom:8px;">Wat betekent dit voor u?</h3>`;
+    html += `<div style="font-size:13px; font-family:sans-serif; line-height:1.7; color:var(--text);">`;
+    if (niveauClass === 'laag') {
+      html += `<strong style="color:var(--green);">Laag risico</strong> — U kunt de zakelijke relatie aangaan met standaard maatregelen.<br>`;
+      html += `Bewaar dit rapport in uw dossier als bewijs van uw cliëntonderzoek (Wwft art. 33). Plan een hercheck in conform uw kantoorbeleid.`;
+    } else if (niveauClass === 'verhoogd') {
+      html += `<strong style="color:var(--orange);">Verhoogd risico</strong> — Extra maatregelen zijn nodig voordat u de relatie aangaat.<br>`;
+      html += `U dient verscherpt cliëntonderzoek uit te voeren: verifieer de identiteit extra, documenteer de herkomst van middelen, en vraag goedkeuring van de compliance officer of leidinggevende. Plan frequentere herchecks in (bijv. elke 6 maanden).`;
+    } else if (niveauClass === 'hoog') {
+      html += `<strong style="color:var(--red);">Hoog risico</strong> — Overweeg of u deze zakelijke relatie kunt aangaan.<br>`;
+      html += `Verscherpt cliëntonderzoek is verplicht. Documenteer uitgebreid de herkomst van middelen en vermogen. Leg de beslissing om de relatie al dan niet aan te gaan vast, met motivering. Overleg met uw compliance officer. Bij sanctiehits: de relatie mag niet worden aangegaan.`;
+    } else {
+      html += `<strong>Onvoldoende gegevens</strong> — Het risico kon niet volledig worden bepaald.<br>`;
+      html += `Controleer of alle bronnen succesvol zijn doorzocht. Vul ontbrekende gegevens aan en voer de screening opnieuw uit.`;
+    }
+    html += `</div></div>`;
 
     // Landenrisico (FATF/EU)
     const lr = r.landenrisico;
