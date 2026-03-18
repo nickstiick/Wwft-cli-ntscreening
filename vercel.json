@@ -21,6 +21,9 @@
     { "source": "/betaald", "destination": "/betaald.html" },
     { "source": "/privacy-technisch", "destination": "/privacy-technisch.html" },
     { "source": "/privacy", "destination": "/privacy-technisch.html" },
-    { "source": "/admin", "destination": "/admin.html" }
+    { "source": "/admin", "destination": "/admin.html" },
+    { "source": "/vergelijk", "destination": "/vergelijk.html" },
+    { "source": "/wwft-checklist", "destination": "/wwft-checklist.html" },
+    { "source": "/klein-kantoor", "destination": "/klein-kantoor.html" }
   ]
 }
