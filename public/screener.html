@@ -1673,7 +1673,7 @@
       data.resultaten.forEach((s, i) => {
         html += `<div class="sanction-hit" id="sanctionHit${i}">`;
         html += `<div class="hit-content">`;
-        html += `<strong>${escapeHtml(s.naam)}</strong> — Score: ${s.score}%<br>`;
+        html += `<strong>${escapeHtml(s.naam)}</strong>${s.score != null ? ` — Score: ${s.score}%` : ''}<br>`;
         html += `<span style="color:var(--text-light);">${escapeHtml(s.lijst || '')}${s.details ? ' — ' + escapeHtml(s.details) : ''}</span>`;
         html += `</div>`;
         html += `<button class="sanction-dismiss-btn" onclick="toggleSanctionDismiss(${i})">Niet van toepassing</button>`;
@@ -1694,7 +1694,7 @@
       data.pep_resultaten.forEach((p, i) => {
         html += `<div class="sanction-hit" id="pepHit${i}">`;
         html += `<div class="hit-content">`;
-        html += `<strong>${escapeHtml(p.naam)}</strong> — Score: ${p.score}%`;
+        html += `<strong>${escapeHtml(p.naam)}</strong>${p.score != null ? ` — Score: ${p.score}%` : ''}`;
         html += p.lijst ? `<br><span style="color:var(--text-light);">${escapeHtml(p.lijst)}</span>` : '';
         html += p.details ? `<br><span style="color:var(--text-light);">${escapeHtml(p.details)}</span>` : '';
         html += `</div>`;
@@ -1717,7 +1717,7 @@
           html += `<div style="color:var(--red); font-weight:bold; margin-bottom:4px;">UBO "${escapeHtml(ubo.ubo_naam)}": ${ubo.hits.length} sanctiehit(s)</div>`;
           ubo.hits.forEach(h => {
             html += `<div style="margin:4px 0; padding:4px 8px; background:rgba(192,57,43,0.05); border-radius:4px; font-size:13px;">`;
-            html += `<strong>${escapeHtml(h.naam)}</strong> — Score: ${h.score}% — ${escapeHtml(h.lijst || '')}`;
+            html += `<strong>${escapeHtml(h.naam)}</strong>${h.score != null ? ` — Score: ${h.score}%` : ''} — ${escapeHtml(h.lijst || '')}`;
             html += `</div>`;
           });
           html += `</div>`;
@@ -2180,7 +2180,7 @@
         if (ubo.hits?.length > 0) {
           html += `<div class="bevinding rood"><div class="bevinding-text"><strong>UBO "${escapeHtml(ubo.ubo_naam)}"</strong>: ${ubo.hits.length} sanctiehit(s)<br>`;
           ubo.hits.forEach(h => {
-            html += `<span style="font-size:12px;">${escapeHtml(h.naam)} — ${h.score}% — ${escapeHtml(h.lijst || '')}</span><br>`;
+            html += `<span style="font-size:12px;">${escapeHtml(h.naam)}${h.score != null ? ` — ${h.score}%` : ''} — ${escapeHtml(h.lijst || '')}</span><br>`;
           });
           html += `</div></div>`;
         } else {
@@ -2252,7 +2252,7 @@
       r.sancties.resultaten.forEach((s, idx) => {
         const sid = `sanctie-${idx}`;
         html += `<div class="bevinding rood" id="${sid}" data-false-positive="false">`;
-        html += `<div class="bevinding-text"><strong>${escapeHtml(s.naam)}</strong> — Score: ${s.score}%</div>`;
+        html += `<div class="bevinding-text"><strong>${escapeHtml(s.naam)}</strong>${s.score != null ? ` — Score: ${s.score}%` : ''}</div>`;
         html += `<div class="bevinding-bron">${escapeHtml(s.lijst || '')} ${s.details ? '— ' + escapeHtml(s.details) : ''}</div>`;
         // Details expand
         html += `<div style="margin-top:8px;">`;
@@ -2794,7 +2794,7 @@
       sectionTitle('UBO-sanctiescreening', d.resultaten.sancties.ubo_sancties.length);
       d.resultaten.sancties.ubo_sancties.forEach(ubo => {
         if (ubo.hits?.length > 0) {
-          colorBar('UBO "' + ubo.ubo_naam + '": ' + ubo.hits.length + ' sanctiehit(s) \u2014 ' + ubo.hits.map(h => h.naam + ' (' + h.score + '%)').join(', '), [192, 57, 43]);
+          colorBar('UBO "' + ubo.ubo_naam + '": ' + ubo.hits.length + ' sanctiehit(s) \u2014 ' + ubo.hits.map(h => h.naam + (h.score != null ? ' (' + h.score + '%)' : '')).join(', '), [192, 57, 43]);
         } else {
           colorBar('UBO "' + ubo.ubo_naam + '": geen sanctiehits', [39, 174, 96]);
         }
@@ -2893,7 +2893,7 @@
         pdf.setFontSize(8);
         pdf.text((s.naam || '').substring(0, 55), marginL + 3, y);
         pdf.text((s.lijst || '').substring(0, 50), marginL + 70, y);
-        pdf.text(s.score + '%', marginL + 140, y);
+        pdf.text(s.score != null ? s.score + '%' : '–', marginL + 140, y);
         pdf.setDrawColor(224, 221, 213);
         pdf.line(marginL, y + 1.5, pageW - marginR, y + 1.5);
         y += 5;

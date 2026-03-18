@@ -362,7 +362,8 @@ async function screenSanctions(naam, geboortedatum, entityType) {
   if (geboortedatum) params.set('date_of_birth', geboortedatum);
 
   const mapResults = (data) => (data.results || []).slice(0, 10).map(r => ({
-    naam: r.name, lijst: r.list_name || r.source, score: r.score,
+    naam: r.name, lijst: r.list_name || r.source,
+    score: r.score != null ? Math.round(r.score * (r.score <= 1 ? 100 : 1)) : null,
     type: r.entity_type, details: r.remarks || r.additional_information || ''
   }));
 
