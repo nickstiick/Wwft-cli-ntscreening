@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wwft-screening voor kleine kantoren — Dossier</title>
+  <meta name="description" content="Professionele Wwft-screening voor accountants, notarissen, advocaten en adviseurs. Vanaf €4,99 per rapport. Geen abonnement, geen verplichtingen.">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy: #1a1a2e;
+      --navy-light: #16213e;
+      --gold: #c9a84c;
+      --gold-light: #d4b85f;
+      --cream: #f8f7f4;
+      --text: #333;
+      --text-light: #666;
+      --border: #e0ddd5;
+      --radius: 8px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: var(--text);
+      background: var(--cream);
+      line-height: 1.7;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Georgia', 'Times New Roman', serif;
+    }
+
+    /* Navigation */
+    html { scroll-behavior: smooth; }
+    nav {
+      background: var(--navy);
+      padding: 16px 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .logo {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      font-size: 22px;
+      font-weight: bold;
+      color: #fff;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+    .logo span { color: var(--gold); }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 0;
+    }
+    nav a {
+      color: rgba(255,255,255,0.8);
+      text-decoration: none;
+      font-size: 15px;
+      margin-left: 28px;
+      transition: color 0.2s;
+    }
+    nav a:hover { color: #fff; }
+    .mobile-toggle {
+      display: none;
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 24px;
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    /* Hero */
+    .hero {
+      background: var(--navy);
+      color: #fff;
+      padding: 80px 24px 100px;
+      text-align: center;
+    }
+    .hero h1 {
+      font-size: clamp(28px, 5vw, 44px);
+      font-weight: normal;
+      max-width: 750px;
+      margin: 0 auto 24px;
+      line-height: 1.3;
+    }
+    .hero p {
+      font-size: 18px;
+      color: rgba(255,255,255,0.7);
+      max-width: 600px;
+      margin: 0 auto 40px;
+    }
+    .hero-cta {
+      display: inline-block;
+      background: var(--gold);
+      color: var(--navy);
+      padding: 16px 40px;
+      border-radius: var(--radius);
+      font-size: 17px;
+      font-weight: bold;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .hero-cta:hover { background: var(--gold-light); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(201,168,76,0.3); }
+    .hero-cta:active { transform: translateY(0); }
+    .hero-sub {
+      font-size: 14px;
+      color: rgba(255,255,255,0.5);
+      margin-top: 16px;
+    }
+
+    /* Section shared */
+    .section {
+      padding: 80px 24px;
+    }
+    .section-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .section h2 {
+      font-size: 28px;
+      color: var(--navy);
+      text-align: center;
+      margin-bottom: 48px;
+      line-height: 1.4;
+    }
+    .bg-cream { background: var(--cream); }
+    .bg-white { background: #fff; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+
+    /* Problem cards */
+    .problem-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+    }
+    .problem-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .problem-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.06); }
+    .problem-card h3 {
+      font-size: 20px;
+      color: var(--navy);
+      margin-bottom: 12px;
+    }
+    .problem-card p {
+      font-size: 15px;
+      color: var(--text-light);
+      line-height: 1.6;
+    }
+
+    /* Feature grid */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+    }
+    .feature-item {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+    .feature-icon {
+      flex-shrink: 0;
+      width: 48px;
+      height: 48px;
+      background: var(--cream);
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+    .feature-item h3 {
+      font-size: 17px;
+      color: var(--navy);
+      margin-bottom: 4px;
+    }
+    .feature-item p {
+      font-size: 14px;
+      color: var(--text-light);
+      line-height: 1.6;
+    }
+
+    /* Profession cards */
+    .profession-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 24px;
+    }
+    .profession-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .profession-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.06); }
+    .profession-card h3 {
+      font-size: 18px;
+      color: var(--navy);
+      margin-bottom: 12px;
+    }
+    .profession-card p {
+      font-size: 14px;
+      color: var(--text-light);
+      line-height: 1.6;
+    }
+
+    /* Pricing mini */
+    .pricing-grid {
+      max-width: 960px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 24px;
+    }
+    .plan {
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 36px 28px;
+      position: relative;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .plan:hover { border-color: var(--gold); transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.06); }
+    .plan.featured { border-color: var(--navy); }
+    .plan-badge {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--navy);
+      color: var(--gold);
+      font-size: 12px;
+      font-weight: bold;
+      padding: 4px 16px;
+      border-radius: 20px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .plan h3 {
+      font-size: 20px;
+      color: var(--navy);
+      margin-bottom: 4px;
+    }
+    .plan .plan-desc {
+      font-size: 14px;
+      color: var(--text-light);
+      margin-bottom: 20px;
+    }
+    .plan .price {
+      font-size: 42px;
+      font-weight: bold;
+      color: var(--navy);
+      font-family: 'Georgia', 'Times New Roman', serif;
+    }
+    .plan .price span {
+      font-size: 16px;
+      font-weight: normal;
+      color: var(--text-light);
+    }
+    .plan .per-rapport {
+      font-size: 14px;
+      color: var(--text-light);
+      margin: 4px 0 24px;
+    }
+    .plan-btn {
+      display: inline-block;
+      padding: 12px 32px;
+      border: 2px solid var(--navy);
+      background: transparent;
+      color: var(--navy);
+      border-radius: var(--radius);
+      font-size: 15px;
+      font-family: inherit;
+      font-weight: bold;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .plan-btn:hover, .plan.featured .plan-btn {
+      background: var(--navy);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+    .plan.featured .plan-btn:hover { background: var(--navy-light); }
+    .plan-btn:active { transform: translateY(0); }
+
+    .pricing-footer {
+      text-align: center;
+      margin-top: 40px;
+    }
+    .pricing-footer a {
+      color: var(--navy);
+      font-size: 15px;
+      text-decoration: none;
+      border-bottom: 1px solid var(--gold);
+      padding-bottom: 2px;
+      transition: color 0.2s;
+    }
+    .pricing-footer a:hover { color: var(--gold); }
+    .pricing-footer .cta-wrap {
+      margin-top: 24px;
+    }
+
+    /* FAQ */
+    .faq-list {
+      max-width: 740px;
+      margin: 0 auto;
+    }
+    .faq-item {
+      border-bottom: 1px solid var(--border);
+    }
+    .faq-item:first-child {
+      border-top: 1px solid var(--border);
+    }
+    .faq-toggle {
+      display: none;
+    }
+    .faq-question {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 0;
+      cursor: pointer;
+      font-size: 16px;
+      color: var(--navy);
+      font-weight: bold;
+      font-family: 'Georgia', 'Times New Roman', serif;
+      line-height: 1.4;
+      user-select: none;
+    }
+    .faq-question::after {
+      content: '+';
+      font-size: 22px;
+      font-weight: normal;
+      color: var(--gold);
+      flex-shrink: 0;
+      margin-left: 16px;
+      transition: transform 0.2s;
+    }
+    .faq-toggle:checked + .faq-question::after {
+      content: '\2212';
+      transform: rotate(180deg);
+    }
+    .faq-answer {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease, padding 0.3s ease;
+    }
+    .faq-toggle:checked ~ .faq-answer {
+      max-height: 300px;
+      padding-bottom: 20px;
+    }
+    .faq-answer p {
+      font-size: 15px;
+      color: var(--text-light);
+      line-height: 1.7;
+    }
+
+    /* Final CTA */
+    .final-cta {
+      background: var(--navy);
+      color: #fff;
+      padding: 80px 24px;
+      text-align: center;
+    }
+    .final-cta h2 {
+      font-size: 28px;
+      color: #fff;
+      margin-bottom: 32px;
+    }
+    .final-cta a {
+      display: inline-block;
+      background: var(--gold);
+      color: var(--navy);
+      padding: 16px 40px;
+      border-radius: var(--radius);
+      font-size: 17px;
+      font-weight: bold;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .final-cta a:hover { background: var(--gold-light); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(201,168,76,0.3); }
+    .final-cta a:active { transform: translateY(0); }
+
+    /* Footer */
+    footer {
+      background: var(--navy);
+      color: rgba(255,255,255,0.5);
+      text-align: center;
+      padding: 32px 24px;
+      font-size: 13px;
+    }
+    footer a {
+      color: rgba(255,255,255,0.7);
+      text-decoration: none;
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .hero { padding: 60px 20px 80px; }
+      .section { padding: 60px 20px; }
+      .plan { padding: 28px 20px; }
+      .mobile-toggle { display: block; }
+      .nav-links {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: var(--navy);
+        flex-direction: column;
+        padding: 16px 24px;
+        border-top: 1px solid rgba(255,255,255,0.1);
+      }
+      .nav-links.open { display: flex; }
+      .nav-links a {
+        margin-left: 0;
+        padding: 10px 0;
+        font-size: 16px;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+      }
+      .nav-links a:last-child { border-bottom: none; }
+      .feature-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <div class="logo">Dossier<span>.</span></div>
+    <button class="mobile-toggle" id="mobileToggle" aria-label="Menu">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="/">Home</a>
+      <a href="/#prijzen">Prijzen</a>
+      <a href="/screener">Screener openen</a>
+    </div>
+  </div>
+</nav>
+
+<!-- 1. Hero -->
+<section class="hero">
+  <h1>Wwft-compliance zonder compliance-afdeling</h1>
+  <p>Voor accountants, notarissen, advocaten en adviseurs met een klein kantoor. Professionele Wwft-screening vanaf &euro;4,99 per rapport.</p>
+  <a href="/screener" class="hero-cta">Gratis proefscreening</a>
+  <div class="hero-sub">Geen account nodig. Eerste screening gratis.</div>
+</section>
+
+<!-- 2. Het probleem -->
+<section class="section bg-cream">
+  <div class="section-inner">
+    <h2>U bent Wwft-plichtig. Maar u bent geen compliance-officer.</h2>
+    <div class="problem-grid">
+      <div class="problem-card">
+        <h3>Tijdgebrek</h3>
+        <p>Tussen cli&euml;ntgesprekken en dossiers door ook nog sanctielijsten doorzoeken? Daar is geen tijd voor.</p>
+      </div>
+      <div class="problem-card">
+        <h3>Dure tooling</h3>
+        <p>RegLab, ComplianceWise &mdash; prima tools, maar &euro;300-600/maand is veel als u 2-3 screenings per maand doet.</p>
+      </div>
+      <div class="problem-card">
+        <h3>BFT/AFM-risico</h3>
+        <p>Onvoldoende Wwft-dossiervorming kan leiden tot boetes tot &euro;5 miljoen. Ook voor kleine kantoren.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3. De oplossing -->
+<section class="section bg-white">
+  <div class="section-inner">
+    <h2>Dossier: het zware zoekwerk in 5 minuten gedaan</h2>
+    <div class="feature-grid">
+      <div class="feature-item">
+        <div class="feature-icon">&#127760;</div>
+        <div>
+          <h3>Sanctielijsten (EU, OFAC, VN)</h3>
+          <p>Automatische check tegen alle relevante sanctielijsten.</p>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">&#128101;</div>
+        <div>
+          <h3>PEP-screening + familieleden</h3>
+          <p>Inclusief naaste familieleden en bekende geassocieerden.</p>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">&#127970;</div>
+        <div>
+          <h3>UBO-verificatie via KvK</h3>
+          <p>UBO's automatisch gevalideerd tegen het Handelsregister.</p>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">&#128240;</div>
+        <div>
+          <h3>Adverse media</h3>
+          <p>Google, nieuws en Rechtspraak.nl in &eacute;&eacute;n keer doorzocht.</p>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">&#9878;</div>
+        <div>
+          <h3>AI-risicoanalyse</h3>
+          <p>Geautomatiseerde risicobeoordeling met onderbouwing.</p>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">&#128196;</div>
+        <div>
+          <h3>PDF-rapport op uw kantoornaam</h3>
+          <p>Direct klaar voor in het cli&euml;ntdossier.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. Social proof / use cases -->
+<section class="section bg-cream">
+  <div class="section-inner">
+    <h2>Gemaakt voor uw beroepsgroep</h2>
+    <div class="profession-grid">
+      <div class="profession-card">
+        <h3>Accountants &amp; belastingadviseurs</h3>
+        <p>Verplicht bij het aannemen van nieuwe cli&euml;nten en bij relevante wijzigingen. Dossier levert een rapport dat voldoet aan de NBA-richtlijnen.</p>
+      </div>
+      <div class="profession-card">
+        <h3>Notarissen</h3>
+        <p>Bij elke akte met financi&euml;le component. Van leveringsakten tot oprichting van vennootschappen. Dossier vervangt het handmatig doorzoeken van lijsten.</p>
+      </div>
+      <div class="profession-card">
+        <h3>Advocaten</h3>
+        <p>Bij het aangaan van een zakelijke relatie of het verrichten van bepaalde diensten. Bewaarplicht van 5 jaar automatisch gedocumenteerd.</p>
+      </div>
+      <div class="profession-card">
+        <h3>Makelaars &amp; taxateurs</h3>
+        <p>Bij aan- en verkoop van onroerend goed. Snelle screening zodat u zich kunt richten op uw kerntaken.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 5. Pricing comparison mini -->
+<section class="section bg-white">
+  <div class="section-inner">
+    <h2>Betaal per rapport, niet per maand</h2>
+    <div class="pricing-grid">
+      <div class="plan">
+        <h3>Starter</h3>
+        <div class="plan-desc">5 rapporten</div>
+        <div class="price">&euro;45 <span>ex. btw</span></div>
+        <div class="per-rapport">&euro;9 per stuk</div>
+      </div>
+      <div class="plan featured">
+        <div class="plan-badge">Meest gekozen</div>
+        <h3>Kantoor</h3>
+        <div class="plan-desc">25 rapporten</div>
+        <div class="price">&euro;175 <span>ex. btw</span></div>
+        <div class="per-rapport">&euro;7 per stuk</div>
+      </div>
+      <div class="plan">
+        <h3>Jaarcontract</h3>
+        <div class="plan-desc">100 rapporten</div>
+        <div class="price">&euro;499 <span>ex. btw</span></div>
+        <div class="per-rapport">&euro;4,99 per stuk</div>
+      </div>
+    </div>
+    <div class="pricing-footer">
+      <a href="/vergelijk">Vergelijk met andere aanbieders &rarr;</a>
+      <div class="cta-wrap">
+        <a href="/#prijzen" class="plan-btn">Bundel kopen</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 6. FAQ -->
+<section class="section bg-cream">
+  <div class="section-inner">
+    <h2>Veelgestelde vragen</h2>
+    <div class="faq-list">
+      <div class="faq-item">
+        <input type="checkbox" class="faq-toggle" id="faq1">
+        <label class="faq-question" for="faq1">Is Dossier geschikt voor mijn kantoor?</label>
+        <div class="faq-answer">
+          <p>Ja, Dossier is geschikt voor alle Wwft-plichtige instellingen, ongeacht de omvang van uw kantoor. Of u nu een eenpitter bent of een klein team hebt: de screening is hetzelfde. U voert de gegevens in, Dossier doorzoekt alle relevante bronnen, en u ontvangt een rapport dat u direct kunt opnemen in uw cli&euml;ntdossier.</p>
+        </div>
+      </div>
+      <div class="faq-item">
+        <input type="checkbox" class="faq-toggle" id="faq2">
+        <label class="faq-question" for="faq2">Worden cli&euml;ntgegevens opgeslagen?</label>
+        <div class="faq-answer">
+          <p>Nee, Dossier werkt volgens privacy by design. Wij slaan geen namen, geboortedata, adressen of screeningresultaten op. Alle data wordt in-memory verwerkt en direct naar uw browser gestuurd. Na de screening is het weg van onze servers. Het rapport wordt in uw browser gegenereerd en blijft bij u.</p>
+        </div>
+      </div>
+      <div class="faq-item">
+        <input type="checkbox" class="faq-toggle" id="faq3">
+        <label class="faq-question" for="faq3">Welke bronnen worden geraadpleegd?</label>
+        <div class="faq-answer">
+          <p>Sanctielijsten (EU, OFAC, VN), PEP-databases, KvK Handelsregister, Rechtspraak.nl, Google en nieuwsbronnen. Alle bronnen worden in &eacute;&eacute;n screening doorlopen, zodat u niet zelf meerdere databases hoeft te raadplegen.</p>
+        </div>
+      </div>
+      <div class="faq-item">
+        <input type="checkbox" class="faq-toggle" id="faq4">
+        <label class="faq-question" for="faq4">Hoe lang is een bundel geldig?</label>
+        <div class="faq-answer">
+          <p>365 dagen na aankoop. Niet-gebruikte credits vervallen na deze periode. U ontvangt een herinnering wanneer uw bundel bijna verloopt, zodat u nog voldoende tijd heeft om resterende credits te gebruiken.</p>
+        </div>
+      </div>
+      <div class="faq-item">
+        <input type="checkbox" class="faq-toggle" id="faq5">
+        <label class="faq-question" for="faq5">Kan ik het rapport op mijn kantoornaam zetten?</label>
+        <div class="faq-answer">
+          <p>Ja, bij elke screening kunt u uw kantoornaam, logo en KvK-nummer toevoegen aan het rapport. Zo ziet het er professioneel uit en is het direct klaar voor uw cli&euml;ntdossier.</p>
+        </div>
+      </div>
+      <div class="faq-item">
+        <input type="checkbox" class="faq-toggle" id="faq6">
+        <label class="faq-question" for="faq6">Voldoet het rapport aan de Wwft-eisen?</label>
+        <div class="faq-answer">
+          <p>Het rapport is een hulpmiddel bij uw cli&euml;ntonderzoek. Het bevat alle elementen die de Wwft vereist: sanctie- en PEP-screening, UBO-verificatie, adverse media check, risicobeoordeling en bewaarplicht-waarschuwing. U blijft zelf verantwoordelijk voor de beoordeling.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 7. Final CTA -->
+<section class="final-cta">
+  <h2>Eerste screening gratis. Geen account nodig.</h2>
+  <a href="/screener">Start gratis proefscreening</a>
+</section>
+
+<footer>
+  <p>Dossier is een hulpmiddel bij het cli&euml;ntonderzoek op grond van de Wwft. Het vervangt niet de beoordelingsplicht van de Wwft-plichtige instelling.</p>
+  <p style="margin-top: 12px;">&copy; 2026 Dossier &middot; <a href="/privacy-technisch">Privacy &amp; techniek</a> &middot; <a href="mailto:info@dossier.nl">Contact</a></p>
+</footer>
+
+<script>
+(function() {
+  // Mobile menu
+  var mobileToggle = document.getElementById('mobileToggle');
+  var navLinks = document.getElementById('navLinks');
+  mobileToggle.addEventListener('click', function() {
+    navLinks.classList.toggle('open');
+    mobileToggle.textContent = navLinks.classList.contains('open') ? '\u2715' : '\u2630';
+  });
+  navLinks.querySelectorAll('a').forEach(function(a) {
+    a.addEventListener('click', function() {
+      navLinks.classList.remove('open');
+      mobileToggle.textContent = '\u2630';
+    });
+  });
+})();
+</script>
+
+</body>
+</html>
