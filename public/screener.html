@@ -1007,6 +1007,36 @@
         </div>
       </div>
 
+      <!-- Familieleden / geassocieerden (PEP-screening Wwft art. 1) -->
+      <div class="form-group full collapsible-section">
+        <div class="section-toggle" id="familieToggle">Familieleden &amp; geassocieerden (PEP) <span class="help-tip" data-tip="De Wwft vereist dat ook naaste familieleden en bekende geassocieerden van PEP's worden gescreend (art. 1 lid 1 sub c en d Wwft).">?</span></div>
+        <div class="section-fields" id="familieFields">
+          <div id="familieEntries">
+            <div class="familie-entry form-grid" data-familie="0">
+              <div class="form-group">
+                <label>Naam familielid / geassocieerde 1</label>
+                <input type="text" class="familieNaam" placeholder="Volledige naam">
+              </div>
+              <div class="form-group">
+                <label>Geboortedatum</label>
+                <input type="date" class="familieGeboortedatum">
+              </div>
+              <div class="form-group">
+                <label>Relatie</label>
+                <select class="familieRelatie">
+                  <option value="Partner">Partner / echtgeno(o)t(e)</option>
+                  <option value="Kind">Kind</option>
+                  <option value="Ouder">Ouder</option>
+                  <option value="Zakelijke geassocieerde">Zakelijke geassocieerde</option>
+                  <option value="Overig familielid">Overig familielid</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <button type="button" id="addFamilieBtn" style="margin-top:10px; font-size:13px; font-family:sans-serif; background:none; border:1px solid var(--border); padding:6px 14px; border-radius:var(--radius); cursor:pointer; color:var(--navy);">+ Familielid toevoegen</button>
+        </div>
+      </div>
+
       <!-- Herkomst middelen -->
       <div class="form-group full collapsible-section">
         <div class="section-toggle" id="herkomstToggle">Herkomst middelen (indien bekend)</div>
@@ -1274,6 +1304,38 @@
     return ubos;
   }
 
+  // Familie/geassocieerden toevoegen (max 4)
+  let familieCount = 1;
+  $('addFamilieBtn').addEventListener('click', function() {
+    if (familieCount >= 4) return;
+    const idx = familieCount++;
+    const entry = document.createElement('div');
+    entry.className = 'familie-entry form-grid';
+    entry.dataset.familie = idx;
+    entry.innerHTML = `
+      <div class="form-group"><label>Naam familielid / geassocieerde ${idx + 1}</label><input type="text" class="familieNaam" placeholder="Volledige naam"></div>
+      <div class="form-group"><label>Geboortedatum</label><input type="date" class="familieGeboortedatum"></div>
+      <div class="form-group"><label>Relatie</label><select class="familieRelatie"><option value="Partner">Partner / echtgeno(o)t(e)</option><option value="Kind">Kind</option><option value="Ouder">Ouder</option><option value="Zakelijke geassocieerde">Zakelijke geassocieerde</option><option value="Overig familielid">Overig familielid</option></select></div>`;
+    $('familieEntries').appendChild(entry);
+    if (familieCount >= 4) this.style.display = 'none';
+  });
+
+  // Helper: collect familie data
+  function collectFamilie() {
+    const entries = document.querySelectorAll('.familie-entry');
+    const familie = [];
+    entries.forEach(e => {
+      const naam = e.querySelector('.familieNaam')?.value?.trim();
+      if (!naam) return;
+      familie.push({
+        naam,
+        geboortedatum: e.querySelector('.familieGeboortedatum')?.value || null,
+        relatie: e.querySelector('.familieRelatie')?.value || null
+      });
+    });
+    return familie;
+  }
+
   // ─── ACTIVATE ─────────────────────────────
   activateBtn.addEventListener('click', () => {
     const code = codeInput.value.trim().toUpperCase();
@@ -1493,6 +1555,7 @@
       herkomst_middelen: $('herkomstMiddelen')?.value?.trim() || null,
       herkomst_vermogen: $('herkomstVermogen')?.value?.trim() || null,
       ubos: $('type').value === 'rechtspersoon' ? collectUbos() : null,
+      familie: collectFamilie(),
       hercheck: $('hercheckAan').checked ? $('hercheckInterval').value : null,
       kvkMonitoring: $('kvkMonitoring').checked || false
     };
@@ -1559,7 +1622,7 @@
         const res = await fetch('/api/screen', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ step: 'sanctions', naam: formData.naam, geboortedatum: formData.geboortedatum, type: formData.type, ubos: formData.ubos })
+          body: JSON.stringify({ step: 'sanctions', naam: formData.naam, geboortedatum: formData.geboortedatum, type: formData.type, ubos: formData.ubos, familie: formData.familie })
         });
         const data = await res.json();
         wizardData.sancties = data;
@@ -1644,7 +1707,7 @@
       const res = await fetch('/api/screen', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ step: 'sanctions', naam: formData.naam, geboortedatum: formData.geboortedatum, type: formData.type, ubos: formData.ubos })
+        body: JSON.stringify({ step: 'sanctions', naam: formData.naam, geboortedatum: formData.geboortedatum, type: formData.type, ubos: formData.ubos, familie: formData.familie })
       });
       const data = await res.json();
       wizardData.sancties = data;
@@ -1727,6 +1790,43 @@
           html += `</div>`;
         }
       });
+    }
+    // Familieleden/geassocieerden screening (Wwft art. 1 lid 1 sub c/d)
+    if (data.familie_screening?.length > 0) {
+      html += `<div style="margin-top:12px; font-weight:bold; font-size:13px; color:var(--text-light); font-family:sans-serif;">PEP-screening familieleden &amp; geassocieerden</div>`;
+      data.familie_screening.forEach(fam => {
+        const hasPep = fam.pep_hits?.length > 0;
+        const hasSanctie = fam.hits?.length > 0;
+        if (hasPep || hasSanctie) {
+          html += `<div class="wizard-result-box" style="border-color:${hasSanctie ? 'var(--red)' : 'var(--orange)'};">`;
+          html += `<div style="color:${hasSanctie ? 'var(--red)' : 'var(--orange)'}; font-weight:bold; margin-bottom:4px;">"${escapeHtml(fam.familie_naam)}" (${escapeHtml(fam.relatie || 'familielid')}): `;
+          if (hasSanctie) html += `${fam.hits.length} sanctiehit(s) `;
+          if (hasPep) html += `${fam.pep_hits.length} PEP-hit(s)`;
+          html += `</div>`;
+          (fam.hits || []).forEach(h => {
+            html += `<div style="margin:4px 0; padding:4px 8px; background:rgba(192,57,43,0.05); border-radius:4px; font-size:13px;">`;
+            html += `<strong>${escapeHtml(h.naam)}</strong>${h.score != null ? ` — ${h.score}%` : ''} — ${escapeHtml(h.lijst || '')}`;
+            html += `</div>`;
+          });
+          (fam.pep_hits || []).forEach(p => {
+            html += `<div style="margin:4px 0; padding:4px 8px; background:rgba(230,126,34,0.05); border-radius:4px; font-size:13px;">`;
+            html += `<strong>${escapeHtml(p.naam)}</strong>${p.score != null ? ` — ${p.score}%` : ''} — PEP${p.lijst ? ' — ' + escapeHtml(p.lijst) : ''}`;
+            html += `</div>`;
+          });
+          html += `</div>`;
+        } else {
+          html += `<div class="wizard-result-box" style="border-color:var(--green);">`;
+          html += `<div style="color:var(--green); font-size:13px;">"${escapeHtml(fam.familie_naam)}" (${escapeHtml(fam.relatie || 'familielid')}): geen hits</div>`;
+          html += `</div>`;
+        }
+      });
+    }
+    // Waarschuwing als PEP-hit gevonden maar geen familieleden gescreend
+    if (data.pep_resultaten?.length > 0 && (!data.familie_screening || data.familie_screening.length === 0)) {
+      html += `<div class="wizard-result-box" style="border-color:var(--orange); background:rgba(230,126,34,0.05);">`;
+      html += `<div style="color:var(--orange); font-weight:bold; font-size:13px;">⚠ PEP-hit gevonden — de Wwft vereist ook screening van naaste familieleden en bekende geassocieerden (art. 1 lid 1 sub c/d).</div>`;
+      html += `<div style="color:var(--text-light); font-size:12px; font-family:sans-serif; margin-top:4px;">Ga terug naar stap 1 om familieleden/geassocieerden toe te voegen, of documenteer in uw dossier waarom dit niet van toepassing is.</div>`;
+      html += `</div>`;
     }
     $('step3Results').innerHTML = html;
   }
@@ -2074,18 +2174,45 @@
       html += `</div></div>`;
     }
 
-    // UBO-gegevens
+    // UBO-gegevens + KvK-validatie
     if (cg.ubos?.length > 0) {
       html += `<div class="result-section">`;
       html += `<h3>UBO-gegevens <span class="section-count">${cg.ubos.length}</span></h3>`;
+      // KvK eigenaar-crosscheck
+      const kvkEigenaar = r.kvk?.basisprofiel?._embedded?.eigenaar?.naam;
+      const kvkNaam = r.kvk?.basisprofiel?.naam || r.kvk?.basisprofiel?.statutaireNaam;
       cg.ubos.forEach((u, i) => {
         html += `<div style="padding:8px 0; ${i < cg.ubos.length - 1 ? 'border-bottom:1px solid var(--border);' : ''} font-size:13px; font-family:sans-serif;">`;
         html += `<strong>${escapeHtml(u.naam)}</strong>`;
         if (u.geboortedatum) html += ` (${escapeHtml(u.geboortedatum)})`;
         html += ` — ${escapeHtml(u.aard_belang || '')}`;
         if (u.percentage) html += ` ${u.percentage}%`;
+        // KvK-validatie: check of UBO-naam (deels) overeenkomt met KvK eigenaar
+        if (kvkEigenaar) {
+          const uboLower = u.naam.toLowerCase();
+          const eigenaarLower = kvkEigenaar.toLowerCase();
+          const match = eigenaarLower.includes(uboLower) || uboLower.includes(eigenaarLower)
+            || uboLower.split(/\s+/).some(w => w.length > 2 && eigenaarLower.includes(w));
+          if (match) {
+            html += ` <span style="color:var(--green); font-size:11px;">✓ komt overeen met KvK-eigenaar</span>`;
+          }
+        }
         html += `</div>`;
       });
+      // Waarschuwing als UBO's niet matchen met KvK eigenaar
+      if (kvkEigenaar) {
+        const anyMatch = cg.ubos.some(u => {
+          const uboLower = u.naam.toLowerCase();
+          const eigenaarLower = kvkEigenaar.toLowerCase();
+          return eigenaarLower.includes(uboLower) || uboLower.includes(eigenaarLower)
+            || uboLower.split(/\s+/).some(w => w.length > 2 && eigenaarLower.includes(w));
+        });
+        if (!anyMatch) {
+          html += `<div class="bevinding oranje" style="margin-top:8px;"><div class="bevinding-text"><strong>Let op:</strong> Geen van de opgegeven UBO's komt overeen met de KvK-eigenaar "${escapeHtml(kvkEigenaar)}". Verifieer of de UBO-gegevens correct zijn (Wwft art. 3 lid 2).</div></div>`;
+        }
+      } else if (r.kvk?.gecontroleerd && kvkNaam) {
+        html += `<div class="bevinding grijs" style="margin-top:8px;"><div class="bevinding-text">KvK-eigenaargegevens niet beschikbaar — UBO-validatie niet mogelijk. Verifieer de UBO-opgave handmatig via het UBO-register.</div></div>`;
+      }
       html += `</div>`;
     }
 
@@ -2190,6 +2317,38 @@
       if (a.ubo_risico_oordeel) {
         html += `<div style="font-size:13px; font-family:sans-serif; margin-top:8px; color:var(--text-light);">${escapeHtml(a.ubo_risico_oordeel)}</div>`;
       }
+      html += `</div>`;
+    }
+
+    // Familie/geassocieerden PEP-screening (Wwft art. 1 lid 1 sub c/d)
+    if (r.sancties?.familie_screening?.length > 0) {
+      html += `<div class="result-section">`;
+      html += `<h3>PEP-screening familieleden &amp; geassocieerden <span class="section-count">${r.sancties.familie_screening.length} gescreend</span></h3>`;
+      r.sancties.familie_screening.forEach(fam => {
+        const hasPep = fam.pep_hits?.length > 0;
+        const hasSanctie = fam.hits?.length > 0;
+        if (hasPep || hasSanctie) {
+          html += `<div class="bevinding ${hasSanctie ? 'rood' : 'oranje'}"><div class="bevinding-text"><strong>"${escapeHtml(fam.familie_naam)}" (${escapeHtml(fam.relatie || 'familielid')})</strong>: `;
+          if (hasSanctie) html += `${fam.hits.length} sanctiehit(s) `;
+          if (hasPep) html += `${fam.pep_hits.length} PEP-hit(s)`;
+          html += `<br>`;
+          (fam.hits || []).forEach(h => {
+            html += `<span style="font-size:12px;">Sanctie: ${escapeHtml(h.naam)}${h.score != null ? ` — ${h.score}%` : ''} — ${escapeHtml(h.lijst || '')}</span><br>`;
+          });
+          (fam.pep_hits || []).forEach(p => {
+            html += `<span style="font-size:12px;">PEP: ${escapeHtml(p.naam)}${p.score != null ? ` — ${p.score}%` : ''}${p.lijst ? ' — ' + escapeHtml(p.lijst) : ''}</span><br>`;
+          });
+          html += `</div></div>`;
+        } else {
+          html += `<div class="bevinding groen"><div class="bevinding-text">"${escapeHtml(fam.familie_naam)}" (${escapeHtml(fam.relatie || 'familielid')}): geen hits</div></div>`;
+        }
+      });
+      html += `</div>`;
+    }
+    // Waarschuwing als PEP gevonden maar geen familieleden gescreend
+    if (r.sancties?.pep_resultaten?.length > 0 && (!r.sancties?.familie_screening || r.sancties.familie_screening.length === 0)) {
+      html += `<div class="result-section">`;
+      html += `<div class="bevinding oranje"><div class="bevinding-text"><strong>Let op:</strong> Er is een PEP-hit gevonden maar er zijn geen familieleden/geassocieerden gescreend. De Wwft vereist ook screening van naaste familieleden en bekende geassocieerden (art. 1 lid 1 sub c en d Wwft).</div></div>`;
       html += `</div>`;
     }
 
@@ -2428,6 +2587,7 @@
     // Disclaimer
     html += `<div class="disclaimer">`;
     html += `<strong>Disclaimer:</strong> Dit rapport is een hulpmiddel bij het cliëntonderzoek op grond van de Wwft. De Wwft-plichtige instelling blijft zelf verantwoordelijk voor de beoordeling en de naleving van de Wwft.`;
+    html += `<br><br><strong>Bewaarplicht (Wwft art. 33-34):</strong> U bent verplicht dit rapport en de onderliggende identificatiedocumenten te bewaren tot minimaal 5 jaar na het beëindigen van de zakelijke relatie of het uitvoeren van de transactie. Zorg dat het rapport en alle bijbehorende stukken in uw (digitaal) dossier worden opgenomen.`;
     if (isProef) {
       html += `<br><br><strong style="color:var(--red);">PROEFSCREENING — Dit rapport is niet geldig als officieel Wwft-dossier.</strong>`;
     }
@@ -2767,17 +2927,38 @@
       y += 2;
     }
 
-    // ═══ UBO-GEGEVENS ═══
+    // ═══ UBO-GEGEVENS + KVK-VALIDATIE ═══
     if (cg.ubos?.length > 0) {
       sectionTitle('UBO-gegevens', cg.ubos.length);
+      const kvkEigenaar = d.resultaten?.kvk?.basisprofiel?._embedded?.eigenaar?.naam;
       cg.ubos.forEach(u => {
         checkPage(6);
         let uboLine = u.naam;
         if (u.geboortedatum) uboLine += ' (' + u.geboortedatum + ')';
         uboLine += ' \u2014 ' + (u.aard_belang || '');
         if (u.percentage) uboLine += ' ' + u.percentage + '%';
+        // KvK-eigenaar crosscheck
+        if (kvkEigenaar) {
+          const uboLower = u.naam.toLowerCase();
+          const eigenaarLower = kvkEigenaar.toLowerCase();
+          const match = eigenaarLower.includes(uboLower) || uboLower.includes(eigenaarLower)
+            || uboLower.split(/\s+/).some(w => w.length > 2 && eigenaarLower.includes(w));
+          if (match) uboLine += ' \u2714 KvK-eigenaar bevestigd';
+        }
         writeText(uboLine, marginL, 9, [51, 51, 51]);
       });
+      // Waarschuwing als UBO's niet matchen
+      if (kvkEigenaar) {
+        const anyMatch = cg.ubos.some(u => {
+          const uboLower = u.naam.toLowerCase();
+          const eigenaarLower = kvkEigenaar.toLowerCase();
+          return eigenaarLower.includes(uboLower) || uboLower.includes(eigenaarLower)
+            || uboLower.split(/\s+/).some(w => w.length > 2 && eigenaarLower.includes(w));
+        });
+        if (!anyMatch) {
+          colorBar('Let op: geen van de UBO\'s komt overeen met KvK-eigenaar "' + kvkEigenaar + '". Verifieer UBO-gegevens (Wwft art. 3 lid 2).', [230, 126, 34]);
+        }
+      }
       y += 2;
     }
 
@@ -2829,6 +3010,29 @@
         }
       });
       if (a.ubo_risico_oordeel) writeText(a.ubo_risico_oordeel, marginL, 9, [102, 102, 102]);
+    }
+
+    // ═══ FAMILIE/GEASSOCIEERDEN PEP-SCREENING ═══
+    const famScreen = d.resultaten?.sancties?.familie_screening;
+    if (famScreen?.length > 0) {
+      sectionTitle('PEP-screening familieleden & geassocieerden', famScreen.length);
+      famScreen.forEach(fam => {
+        const hasPep = fam.pep_hits?.length > 0;
+        const hasSanctie = fam.hits?.length > 0;
+        if (hasPep || hasSanctie) {
+          let famText = '"' + fam.familie_naam + '" (' + (fam.relatie || 'familielid') + '): ';
+          if (hasSanctie) famText += fam.hits.length + ' sanctiehit(s) ';
+          if (hasPep) famText += fam.pep_hits.length + ' PEP-hit(s)';
+          colorBar(famText, hasSanctie ? [192, 57, 43] : [230, 126, 34]);
+        } else {
+          colorBar('"' + fam.familie_naam + '" (' + (fam.relatie || 'familielid') + '): geen hits', [39, 174, 96]);
+        }
+      });
+    }
+    // Waarschuwing als PEP gevonden maar geen familieleden gescreend
+    if (d.resultaten?.sancties?.pep_resultaten?.length > 0 && (!famScreen || famScreen.length === 0)) {
+      sectionTitle('PEP-familieleden');
+      colorBar('Let op: PEP-hit gevonden maar geen familieleden/geassocieerden gescreend. De Wwft vereist screening van naaste familieleden en bekende geassocieerden (art. 1 lid 1 sub c/d).', [230, 126, 34]);
     }
 
     // ═══ HERCHECK-ADVIES ═══
@@ -3139,9 +3343,11 @@
     pdf.setDrawColor(224, 221, 213);
     pdf.setLineWidth(0.3);
     const disclaimerText = 'Disclaimer: Dit rapport is een hulpmiddel bij het cli\u00ebntonderzoek op grond van de Wwft. De Wwft-plichtige instelling blijft zelf verantwoordelijk voor de beoordeling en de naleving van de Wwft.';
+    const bewaarplichtText = 'Bewaarplicht (Wwft art. 33-34): U bent verplicht dit rapport en de onderliggende identificatiedocumenten te bewaren tot minimaal 5 jaar na het be\u00ebindigen van de zakelijke relatie of het uitvoeren van de transactie.';
     pdf.setFontSize(8);
     const discLines = pdf.splitTextToSize(disclaimerText, contentW - 8);
-    const discH = discLines.length * 3.5 + 6;
+    const bewaarLines = pdf.splitTextToSize(bewaarplichtText, contentW - 8);
+    const discH = (discLines.length + bewaarLines.length) * 3.5 + 10;
     pdf.roundedRect(marginL, y, contentW, discH + (isProef ? 8 : 0), 2, 2, 'FD');
     pdf.setTextColor(102, 102, 102);
     pdf.setFont('helvetica', 'normal');
@@ -3150,6 +3356,16 @@
       pdf.text(line, marginL + 4, discY);
       discY += 3.5;
     });
+    discY += 2;
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(51, 51, 51);
+    bewaarLines.forEach((line, i) => {
+      if (i > 0) pdf.setFont('helvetica', 'normal');
+      pdf.text(line, marginL + 4, discY);
+      discY += 3.5;
+    });
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(102, 102, 102);
     if (isProef) {
       discY += 2;
       pdf.setTextColor(192, 57, 43);

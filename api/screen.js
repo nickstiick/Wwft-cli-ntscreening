@@ -30,7 +30,7 @@ module.exports = async function handler(req, res) {
   // Volledige screening (originele flow, ook voor API-gebruik)
   const { naam, geboortedatum, type, locatie, land, kvkZoeken, activatiecode, hercheck,
     aard_dienst, nationaliteit, adres_straat, adres_postcode, id_document_type, id_document_nummer, id_document_geldig_tot,
-    vertegenwoordiger_naam, vertegenwoordiger_geboortedatum, herkomst_middelen, herkomst_vermogen, ubos } = req.body;
+    vertegenwoordiger_naam, vertegenwoordiger_geboortedatum, herkomst_middelen, herkomst_vermogen, ubos, familie } = req.body;
 
   if (!naam) {
     return res.status(400).json({ error: 'Naam is verplicht.' });
@@ -110,10 +110,22 @@ module.exports = async function handler(req, res) {
         uboResultaten.push(...await Promise.all(uboPromises));
       }
 
+      // Familieleden/geassocieerden screenen (Wwft art. 1 lid 1 sub c/d)
+      const familieResultaten = [];
+      if (Array.isArray(familie)) {
+        const familiePromises = familie.filter(f => f.naam?.trim()).map(async (fam) => {
+          resultaten.queries.push({ type: 'sancties_familie', query: fam.naam, tijdstip: timestamp() });
+          const hits = await screenSanctions(fam.naam, fam.geboortedatum, 'person');
+          return { familie_naam: fam.naam, familie_geboortedatum: fam.geboortedatum || null, relatie: fam.relatie || null, hits: hits.resultaten, pep_hits: hits.pep_resultaten };
+        });
+        familieResultaten.push(...await Promise.all(familiePromises));
+      }
+
       return {
         resultaten: hoofdResultaat.resultaten,
         pep_resultaten: hoofdResultaat.pep_resultaten,
         ubo_sancties: uboResultaten,
+        familie_screening: familieResultaten,
         gecontroleerd: hoofdResultaat.gecontroleerd
       };
     })();
@@ -219,7 +231,8 @@ module.exports = async function handler(req, res) {
       vertegenwoordiger_geboortedatum: vertegenwoordiger_geboortedatum || null,
       herkomst_middelen: herkomst_middelen || null,
       herkomst_vermogen: herkomst_vermogen || null,
-      ubos: ubos || null
+      ubos: ubos || null,
+      familie: familie || null
     };
 
     // Gebruik loggen (alleen teller, geen persoonsgegevens)
@@ -310,7 +323,7 @@ async function stepKvk(req, res) {
 }
 
 async function stepSanctions(req, res) {
-  const { naam, geboortedatum, type, ubos } = req.body;
+  const { naam, geboortedatum, type, ubos, familie } = req.body;
   if (!naam) return res.status(400).json({ error: 'Naam is verplicht.' });
   try {
     // Screen hoofdsubject
@@ -327,16 +340,33 @@ async function stepSanctions(req, res) {
       uboResultaten.push(...results);
     }
 
+    // Screen familieleden/geassocieerden tegen PEP- en sanctielijsten (Wwft art. 1 lid 1 sub c/d)
+    const familieResultaten = [];
+    if (Array.isArray(familie)) {
+      const familiePromises = familie.filter(f => f.naam?.trim()).map(async (fam) => {
+        const hits = await screenSanctions(fam.naam, fam.geboortedatum, 'person');
+        return {
+          familie_naam: fam.naam,
+          familie_geboortedatum: fam.geboortedatum || null,
+          relatie: fam.relatie || null,
+          hits: hits.resultaten,
+          pep_hits: hits.pep_resultaten
+        };
+      });
+      familieResultaten.push(...await Promise.all(familiePromises));
+    }
+
     return res.status(200).json({
       resultaten: hoofdResultaat.resultaten,
       pep_resultaten: hoofdResultaat.pep_resultaten,
       ubo_sancties: uboResultaten,
+      familie_screening: familieResultaten,
       gecontroleerd: hoofdResultaat.gecontroleerd,
       fout: hoofdResultaat.fout || null
     });
   } catch (e) {
     console.error('Sanctiescreening mislukt:', e.message);
-    return res.status(200).json({ resultaten: [], ubo_sancties: [], gecontroleerd: false });
+    return res.status(200).json({ resultaten: [], ubo_sancties: [], familie_screening: [], gecontroleerd: false });
   }
 }
 
