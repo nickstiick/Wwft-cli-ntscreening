@@ -206,6 +206,44 @@
       color: var(--text);
     }
 
+    /* Section anchor nav */
+    .section-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 24px;
+      padding: 14px 16px;
+      background: var(--cream);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .section-nav-label {
+      font-size: 12px;
+      color: #888;
+      width: 100%;
+      margin-bottom: 2px;
+      font-family: var(--font-sans);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .section-nav a {
+      font-size: 13px;
+      color: var(--navy);
+      text-decoration: none;
+      padding: 5px 12px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: #fff;
+      font-family: var(--font-sans);
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .section-nav a:hover {
+      background: var(--navy);
+      color: #fff;
+      border-color: var(--navy);
+    }
+
     /* Collapsible sections */
     .whitelabel-section, .collapsible-section {
       border-top: 1px solid var(--border);
@@ -217,6 +255,7 @@
       color: var(--navy);
       cursor: pointer;
       user-select: none;
+      font-weight: 500;
     }
     .whitelabel-toggle::before, .section-toggle::before { content: '\25B6 '; font-size: 10px; }
     .whitelabel-toggle.open::before, .section-toggle.open::before { content: '\25BC '; }
@@ -817,6 +856,18 @@
         </select>
       </div>
 
+      <!-- Sectie-navigatie -->
+      <div class="form-group full">
+        <div class="section-nav" id="sectionNav">
+          <span class="section-nav-label">Aanvullende gegevens (klik om in te vullen)</span>
+          <a href="#idToggle" data-nav-target="idToggle">Identificatie</a>
+          <a href="#vertToggle" data-nav-target="vertToggle">Vertegenwoordiger</a>
+          <a href="#uboToggle" data-nav-target="uboToggle" id="navUbo" style="display:none;">UBO-gegevens</a>
+          <a href="#herkomstToggle" data-nav-target="herkomstToggle">Herkomst middelen</a>
+          <a href="#whitelabelToggle" data-nav-target="whitelabelToggle">Kantoornaam / whitelabel</a>
+        </div>
+      </div>
+
       <!-- Cliëntidentificatie (Wwft art. 33) -->
       <div class="form-group full collapsible-section">
         <div class="section-toggle" id="idToggle">Cliëntidentificatie (Wwft art. 33)</div>
@@ -1070,10 +1121,26 @@
     });
   });
 
+  // Section nav: klik opent de sectie en scrollt erheen
+  document.querySelectorAll('.section-nav a[data-nav-target]').forEach(link => {
+    link.addEventListener('click', function(e) {
+      e.preventDefault();
+      const targetId = this.getAttribute('data-nav-target');
+      const toggle = $(targetId);
+      if (!toggle) return;
+      // Open de sectie als die dicht is
+      if (!toggle.classList.contains('open')) toggle.click();
+      // Scroll smoothly naar de sectie
+      toggle.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+
   // UBO section visibility (alleen bij rechtspersoon)
   function updateUboVisibility() {
     const isRP = $('type').value === 'rechtspersoon';
     $('uboSection').style.display = isRP ? 'block' : 'none';
+    const navUbo = $('navUbo');
+    if (navUbo) navUbo.style.display = isRP ? 'inline-block' : 'none';
   }
   $('type').addEventListener('change', updateUboVisibility);
   updateUboVisibility();
