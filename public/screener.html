@@ -1690,11 +1690,15 @@
       html += `<div style="margin-top:12px; font-weight:bold; font-size:13px; color:var(--text-light); font-family:sans-serif;">PEP-screening</div>`;
       html += `<div class="wizard-result-box" style="border-color:var(--orange);">`;
       html += `<div style="color:var(--orange); font-weight:bold; margin-bottom:4px;">⚠ ${data.pep_resultaten.length} PEP-hit(s) gevonden</div>`;
-      data.pep_resultaten.forEach(p => {
-        html += `<div style="margin:4px 0; padding:4px 8px; background:rgba(243,156,18,0.05); border-radius:4px; font-size:13px;">`;
+      html += `<div style="color:var(--text-light); font-size:12px; font-family:sans-serif; margin-bottom:12px;">Niet relevant? Markeer als niet van toepassing — dit wordt meegenomen in het rapport.</div>`;
+      data.pep_resultaten.forEach((p, i) => {
+        html += `<div class="sanction-hit" id="pepHit${i}">`;
+        html += `<div class="hit-content">`;
         html += `<strong>${escapeHtml(p.naam)}</strong> — Score: ${p.score}%`;
-        html += p.lijst ? ` — ${escapeHtml(p.lijst)}` : '';
-        html += p.details ? ` — ${escapeHtml(p.details)}` : '';
+        html += p.lijst ? `<br><span style="color:var(--text-light);">${escapeHtml(p.lijst)}</span>` : '';
+        html += p.details ? `<br><span style="color:var(--text-light);">${escapeHtml(p.details)}</span>` : '';
+        html += `</div>`;
+        html += `<button class="sanction-dismiss-btn" onclick="togglePepDismiss(${i})">Niet van toepassing</button>`;
         html += `</div>`;
       });
       html += `</div>`;
@@ -1729,6 +1733,7 @@
 
   // Track dismissed sanctions
   wizardData.dismissedSancties = new Set();
+  wizardData.dismissedPeps = new Set();
 
   window.toggleSanctionDismiss = function(index) {
     const hit = document.getElementById('sanctionHit' + index);
@@ -1740,6 +1745,22 @@
       btn.classList.remove('dismissed');
     } else {
       wizardData.dismissedSancties.add(index);
+      hit.classList.add('dismissed');
+      btn.textContent = 'Herstellen';
+      btn.classList.add('dismissed');
+    }
+  };
+
+  window.togglePepDismiss = function(index) {
+    const hit = document.getElementById('pepHit' + index);
+    const btn = hit.querySelector('.sanction-dismiss-btn');
+    if (wizardData.dismissedPeps.has(index)) {
+      wizardData.dismissedPeps.delete(index);
+      hit.classList.remove('dismissed');
+      btn.textContent = 'Niet van toepassing';
+      btn.classList.remove('dismissed');
+    } else {
+      wizardData.dismissedPeps.add(index);
       hit.classList.add('dismissed');
       btn.textContent = 'Herstellen';
       btn.classList.add('dismissed');
@@ -1878,6 +1899,13 @@
       sanctieData.resultaten = sanctieData.resultaten.map((s, i) => ({
         ...s,
         false_positive: wizardData.dismissedSancties.has(i)
+      }));
+    }
+    // Mark dismissed PEPs as false positives
+    if (sanctieData.pep_resultaten && wizardData.dismissedPeps?.size > 0) {
+      sanctieData.pep_resultaten = sanctieData.pep_resultaten.map((p, i) => ({
+        ...p,
+        false_positive: wizardData.dismissedPeps.has(i)
       }));
     }
 
@@ -3154,7 +3182,8 @@
       google: [], nieuws: [],
       rechtspraak: { resultaten: [] },
       queries: [],
-      dismissedSancties: new Set()
+      dismissedSancties: new Set(),
+      dismissedPeps: new Set()
     };
     // Reset wizard panels
     document.querySelectorAll('.wizard-panel').forEach(p => p.classList.remove('active'));
