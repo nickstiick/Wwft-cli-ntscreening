@@ -322,8 +322,10 @@
     }
     .wizard-step.active .step-num { background: var(--navy); color: #fff; }
     .wizard-step.done .step-num { background: var(--green); color: #fff; }
+    .wizard-step.skipped .step-num { background: var(--border); color: var(--text-light); }
     .wizard-step.active { color: var(--navy); font-weight: bold; }
     .wizard-step.done { color: var(--green); }
+    .wizard-step.skipped { color: var(--text-light); opacity: 0.5; }
     .wizard-step:not(:last-child)::after {
       content: '';
       position: absolute;
@@ -1105,6 +1107,10 @@
         <div class="spinner"></div><br>AI-analyse wordt uitgevoerd en rapport wordt gegenereerd...<br><span style="font-size:12px; color:#aaa;">Duurt meestal 15–30 seconden</span>
       </div>
     </div>
+    <div class="wizard-nav" id="step5Nav" style="display:none;">
+      <button class="btn-prev" id="wizardStep5Prev">&larr; Terug naar bronnen</button>
+      <span></span>
+    </div>
   </div>
 
   <!-- Results (used by step 5 to render the full report) -->
@@ -1370,6 +1376,7 @@
 
   // ─── WIZARD FLOW ─────────────────────────
   let wizardStep = 1;
+  let kvkSkipped = false;
   let wizardData = {
     kvk: { resultaten: [], basisprofiel: null, vestigingsprofielen: [], gecontroleerd: false },
     sancties: { resultaten: [], gecontroleerd: true },
@@ -1397,8 +1404,14 @@
     // Update step bar
     document.querySelectorAll('.wizard-step').forEach(s => {
       const sn = parseInt(s.dataset.ws);
-      s.classList.remove('active', 'done');
-      if (sn < step) s.classList.add('done');
+      s.classList.remove('active', 'done', 'skipped');
+      if (sn < step) {
+        if (sn === 2 && kvkSkipped) {
+          s.classList.add('skipped');
+        } else {
+          s.classList.add('done');
+        }
+      }
       if (sn === step) s.classList.add('active');
     });
     // Hide intro and activation bar when past step 1 for cleaner view
@@ -1456,6 +1469,7 @@
 
   // ── STEP 1 → 2: Validate form, deduct credit, go to KvK ──
   $('wizardStep1Next').addEventListener('click', async function() {
+    if (this.disabled) return;
     // Reset validation states
     $('naam').classList.remove('input-error');
     $('naamError').classList.remove('visible');
@@ -1490,12 +1504,15 @@
       isProef = true;
     }
 
+    this.disabled = true;
+
     // Auto-start KvK if applicable
     const formData = collectFormData();
     const doKvk = formData.kvkZoeken && (formData.type === 'rechtspersoon' || formData.type === 'ubo');
 
     if (!doKvk) {
       // Skip stap 2 — direct naar sancties
+      kvkSkipped = true;
       goToStep(3);
       $('step3Loading').style.display = 'block';
       $('step3Results').innerHTML = '';
@@ -1513,9 +1530,11 @@
         $('step3Loading').style.display = 'none';
         stepError($('step3Results'), 'Sanctiecontrole mislukt.');
       }
+      $('wizardStep1Next').disabled = false;
       return;
     }
 
+    kvkSkipped = false;
     goToStep(2);
     $('step2Loading').style.display = 'block';
     $('step2Skip').style.display = 'none';
@@ -1534,6 +1553,7 @@
       $('step2Loading').style.display = 'none';
       stepError($('step2Results'), 'KvK opvragen mislukt.');
     }
+    $('wizardStep1Next').disabled = false;
   });
 
   function renderKvkResults(data) {
@@ -1575,6 +1595,7 @@
   // ── STEP 2 → 3: Sanctions ──
   $('wizardStep2Prev').addEventListener('click', () => goToStep(1));
   $('wizardStep2Next').addEventListener('click', async function() {
+    this.disabled = true;
     goToStep(3);
     const formData = collectFormData();
 
@@ -1594,6 +1615,7 @@
       $('step3Loading').style.display = 'none';
       stepError($('step3Results'), 'Sanctiecontrole mislukt.');
     }
+    this.disabled = false;
   });
 
   function renderSanctionResults(data) {
@@ -1686,8 +1708,9 @@
   };
 
   // ── STEP 3 → 4: Search ──
-  $('wizardStep3Prev').addEventListener('click', () => goToStep(2));
+  $('wizardStep3Prev').addEventListener('click', () => goToStep(kvkSkipped ? 1 : 2));
   $('wizardStep3Next').addEventListener('click', async function() {
+    this.disabled = true;
     goToStep(4);
     const formData = collectFormData();
 
@@ -1710,6 +1733,7 @@
       $('step4Loading').style.display = 'none';
       stepError($('step4Results'), 'Bronnenonderzoek mislukt.');
     }
+    this.disabled = false;
   });
 
   function renderSearchResults(data) {
@@ -1843,7 +1867,9 @@
 
       if (!res.ok) {
         stepError($('step5Content'), 'Analyse mislukt.');
-        this.disabled = false;
+        $('step5Nav').style.display = 'flex';
+        btn.disabled = false;
+        btn.textContent = 'Rapport genereren \u2192';
         return;
       }
 
@@ -1863,6 +1889,7 @@
     } catch (err) {
       $('step5Loading').style.display = 'none';
       stepError($('step5Content'), 'Rapport genereren mislukt.');
+      $('step5Nav').style.display = 'flex';
     }
     btn.disabled = false;
   }
@@ -1883,6 +1910,12 @@
   });
   $('creditConfirmCancel').addEventListener('click', function() {
     $('creditConfirm').classList.remove('visible');
+  });
+
+  $('wizardStep5Prev').addEventListener('click', function() {
+    $('step5Nav').style.display = 'none';
+    $('step5Content').innerHTML = `<div class="wizard-loading" id="step5Loading" style="display:none;"><div class="spinner"></div><br>AI-analyse wordt uitgevoerd en rapport wordt gegenereerd...<br><span style="font-size:12px; color:#aaa;">Duurt meestal 15–30 seconden</span></div>`;
+    goToStep(4);
   });
 
   function setStep(id, state) {
@@ -3056,6 +3089,7 @@
 
     // Reset wizard
     wizardStep = 1;
+    kvkSkipped = false;
     wizardData = {
       kvk: { resultaten: [], basisprofiel: null, vestigingsprofielen: [], gecontroleerd: false },
       sancties: { resultaten: [], gecontroleerd: true },
