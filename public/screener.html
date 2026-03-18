@@ -506,6 +506,40 @@
       flex-shrink: 0;
     }
 
+    /* ─── CONFIRM DIALOG ─────────────────── */
+    .confirm-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(26,26,46,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .confirm-overlay.visible { display: flex; }
+    .confirm-dialog {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 28px 32px;
+      max-width: 420px;
+      width: 90%;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+      animation: fadeSlideIn 0.2s ease;
+      text-align: center;
+    }
+    .confirm-dialog h3 { font-size: 17px; color: var(--navy); margin-bottom: 8px; }
+    .confirm-dialog p { font-size: 14px; color: var(--text-light); font-family: sans-serif; margin-bottom: 20px; line-height: 1.5; }
+    .confirm-dialog .confirm-btns { display: flex; gap: 10px; justify-content: center; }
+    .confirm-dialog .btn-cancel {
+      padding: 10px 24px; background: var(--cream); color: var(--navy); border: 1px solid var(--border);
+      border-radius: var(--radius); font-family: inherit; font-size: 14px; cursor: pointer;
+    }
+    .confirm-dialog .btn-confirm {
+      padding: 10px 24px; background: var(--navy); color: #fff; border: none;
+      border-radius: var(--radius); font-family: inherit; font-size: 14px; font-weight: bold; cursor: pointer;
+    }
+    .confirm-dialog .btn-confirm:hover { background: var(--navy-light); }
+
     /* ─── RESULTS ──────────────────────────── */
     .results-panel {
       display: none;
@@ -761,27 +795,27 @@
 
 <div class="container">
 
+  <!-- Intro -->
+  <div class="screen-intro" id="screenIntro" style="background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:20px 24px; margin-bottom:20px; font-family:sans-serif; font-size:14px; color:var(--text); line-height:1.7;">
+    <strong style="color:var(--navy); font-size:15px;">Wwft-screening in 5 stappen</strong><br>
+    Vul de gegevens van uw cliënt in en wij doorzoeken automatisch het KvK Handelsregister, sanctielijsten (EU, OFAC, VN), PEP-databases, rechtspraak.nl en het open internet. U ontvangt een kant-en-klaar rapport met risicobeoordeling.
+  </div>
+
   <!-- Activatiecode -->
   <div class="activation-bar" id="activationBar">
     <h3>Activatiecode</h3>
+    <div class="free-note" style="margin-bottom:10px; font-size:14px; color:var(--green); font-weight:500;">Geen code? Uw eerste screening is volledig gratis — geen account nodig.</div>
     <div class="activation-row">
       <input type="text" id="codeInput" placeholder="DOSS-XXXX-XXXX-XXXX" maxlength="19">
       <button id="activateBtn">Activeren</button>
     </div>
     <div class="activation-status" id="activationStatus"></div>
     <div class="activation-error" id="activationError"></div>
-    <div class="free-note">Geen code? Uw eerste screening is gratis.</div>
   </div>
 
   <!-- No credits message -->
   <div class="no-credits-msg" id="noCreditsMsg">
     Geen credits meer beschikbaar. <a href="/">Koop een nieuwe bundel</a> om door te gaan.
-  </div>
-
-  <!-- Intro -->
-  <div class="screen-intro" id="screenIntro" style="background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:20px 24px; margin-bottom:20px; font-family:sans-serif; font-size:14px; color:var(--text); line-height:1.7;">
-    <strong style="color:var(--navy); font-size:15px;">Wwft-screening in 5 stappen</strong><br>
-    Vul de gegevens van uw cliënt in en wij doorzoeken automatisch het KvK Handelsregister, sanctielijsten (EU, OFAC, VN), PEP-databases, rechtspraak.nl en het open internet. U ontvangt een kant-en-klaar rapport met risicobeoordeling.
   </div>
 
   <!-- Wizard Step Bar -->
@@ -1017,7 +1051,7 @@
     <p style="font-size:13px; color:var(--text-light); font-family:sans-serif; margin-bottom:16px; margin-top:-12px;">We zoeken uw cliënt op in het Handelsregister van de Kamer van Koophandel.</p>
     <div id="step2Content">
       <div class="wizard-loading" id="step2Loading" style="display:none;">
-        <div class="spinner"></div><br>KvK Handelsregister wordt doorzocht...
+        <div class="spinner"></div><br>KvK Handelsregister wordt doorzocht...<br><span style="font-size:12px; color:#aaa;">Duurt meestal een paar seconden</span>
       </div>
       <div id="step2Results"></div>
       <div id="step2Skip" style="display:none; text-align:center; padding:30px; color:var(--text-light); font-family:sans-serif;">
@@ -1036,7 +1070,7 @@
     <p style="font-size:13px; color:var(--text-light); font-family:sans-serif; margin-bottom:16px; margin-top:-12px;">We controleren uw cliënt tegen EU-, OFAC- en VN-sanctielijsten en PEP-databases. Niet-relevante treffers kunt u als false positive markeren.</p>
     <div id="step3Content">
       <div class="wizard-loading" id="step3Loading" style="display:none;">
-        <div class="spinner"></div><br>Sanctielijsten worden gecontroleerd (EU, OFAC, VN)...
+        <div class="spinner"></div><br>Sanctielijsten worden gecontroleerd (EU, OFAC, VN)...<br><span style="font-size:12px; color:#aaa;">Duurt meestal 5–15 seconden</span>
       </div>
       <div id="step3Results"></div>
     </div>
@@ -1052,7 +1086,7 @@
     <p style="font-size:13px; color:var(--text-light); font-family:sans-serif; margin-bottom:16px; margin-top:-12px;">We doorzoeken het internet, nieuwsbronnen en rechtspraak.nl op relevante informatie over uw cliënt.</p>
     <div id="step4Content">
       <div class="wizard-loading" id="step4Loading" style="display:none;">
-        <div class="spinner"></div><br>Internet, nieuws en rechtspraak worden doorzocht...
+        <div class="spinner"></div><br>Internet, nieuws en rechtspraak worden doorzocht...<br><span style="font-size:12px; color:#aaa;">Duurt meestal 10–20 seconden</span>
       </div>
       <div id="step4Results"></div>
     </div>
@@ -1068,7 +1102,7 @@
     <p style="font-size:13px; color:var(--text-light); font-family:sans-serif; margin-bottom:16px; margin-top:-12px;">Alle verzamelde gegevens worden geanalyseerd. U ontvangt een compleet rapport met risicobeoordeling.</p>
     <div id="step5Content">
       <div class="wizard-loading" id="step5Loading" style="display:none;">
-        <div class="spinner"></div><br>AI-analyse wordt uitgevoerd en rapport wordt gegenereerd...
+        <div class="spinner"></div><br>AI-analyse wordt uitgevoerd en rapport wordt gegenereerd...<br><span style="font-size:12px; color:#aaa;">Duurt meestal 15–30 seconden</span>
       </div>
     </div>
   </div>
@@ -1088,6 +1122,18 @@
     <div id="hercheckContent" style="font-size:14px;"></div>
   </div>
 
+</div>
+
+<!-- Credit bevestigingsdialoog -->
+<div class="confirm-overlay" id="creditConfirm">
+  <div class="confirm-dialog">
+    <h3>Rapport genereren</h3>
+    <p id="creditConfirmMsg">Er wordt 1 credit afgeschreven. U heeft nog <strong id="creditConfirmCount">0</strong> credits over na deze screening.</p>
+    <div class="confirm-btns">
+      <button class="btn-cancel" id="creditConfirmCancel">Annuleren</button>
+      <button class="btn-confirm" id="creditConfirmOk">Doorgaan</button>
+    </div>
+  </div>
 </div>
 
 <div class="watermark" id="watermark">PROEFSCREENING — NIET GELDIG ALS OFFICIEEL WWFT-DOSSIER</div>
@@ -1401,7 +1447,11 @@
   }
 
   function stepError(panel, msg) {
-    panel.innerHTML = `<div style="padding:16px; background:#fdf0ef; border:1px solid var(--red); border-radius:var(--radius); color:var(--red); font-family:sans-serif;">${escapeHtml(msg)}</div>`;
+    panel.innerHTML = `<div style="padding:20px; background:#fdf0ef; border:1px solid var(--red); border-radius:var(--radius); font-family:sans-serif; text-align:center;">
+      <div style="font-size:24px; margin-bottom:8px;">&#9888;</div>
+      <strong style="color:var(--red);">Er ging iets mis</strong>
+      <p style="font-size:13px; color:var(--text-light); margin-top:6px;">Controleer uw internetverbinding en ga een stap terug om het opnieuw te proberen.</p>
+    </div>`;
   }
 
   // ── STEP 1 → 2: Validate form, deduct credit, go to KvK ──
@@ -1440,34 +1490,49 @@
       isProef = true;
     }
 
-    goToStep(2);
-
     // Auto-start KvK if applicable
     const formData = collectFormData();
     const doKvk = formData.kvkZoeken && (formData.type === 'rechtspersoon' || formData.type === 'ubo');
 
-    if (doKvk) {
-      $('step2Loading').style.display = 'block';
-      $('step2Skip').style.display = 'none';
-      $('step2Results').innerHTML = '';
+    if (!doKvk) {
+      // Skip stap 2 — direct naar sancties
+      goToStep(3);
+      $('step3Loading').style.display = 'block';
+      $('step3Results').innerHTML = '';
       try {
         const res = await fetch('/api/screen', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ step: 'kvk', naam: formData.naam, type: formData.type })
+          body: JSON.stringify({ step: 'sanctions', naam: formData.naam, geboortedatum: formData.geboortedatum, type: formData.type, ubos: formData.ubos })
         });
         const data = await res.json();
-        wizardData.kvk = data;
-        $('step2Loading').style.display = 'none';
-        renderKvkResults(data);
+        wizardData.sancties = data;
+        $('step3Loading').style.display = 'none';
+        renderSanctionResults(data);
       } catch (err) {
-        $('step2Loading').style.display = 'none';
-        stepError($('step2Results'), 'KvK opvragen mislukt: ' + err.message);
+        $('step3Loading').style.display = 'none';
+        stepError($('step3Results'), 'Sanctiecontrole mislukt.');
       }
-    } else {
+      return;
+    }
+
+    goToStep(2);
+    $('step2Loading').style.display = 'block';
+    $('step2Skip').style.display = 'none';
+    $('step2Results').innerHTML = '';
+    try {
+      const res = await fetch('/api/screen', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ step: 'kvk', naam: formData.naam, type: formData.type })
+      });
+      const data = await res.json();
+      wizardData.kvk = data;
       $('step2Loading').style.display = 'none';
-      $('step2Skip').style.display = 'block';
-      $('step2Results').innerHTML = '';
+      renderKvkResults(data);
+    } catch (err) {
+      $('step2Loading').style.display = 'none';
+      stepError($('step2Results'), 'KvK opvragen mislukt.');
     }
   });
 
@@ -1527,7 +1592,7 @@
       renderSanctionResults(data);
     } catch (err) {
       $('step3Loading').style.display = 'none';
-      stepError($('step3Results'), 'Sanctiecontrole mislukt: ' + err.message);
+      stepError($('step3Results'), 'Sanctiecontrole mislukt.');
     }
   });
 
@@ -1643,7 +1708,7 @@
       renderSearchResults(data);
     } catch (err) {
       $('step4Loading').style.display = 'none';
-      stepError($('step4Results'), 'Bronnenonderzoek mislukt: ' + err.message);
+      stepError($('step4Results'), 'Bronnenonderzoek mislukt.');
     }
   });
 
@@ -1702,12 +1767,14 @@
 
   // ── STEP 4 → 5: Analyse ──
   $('wizardStep4Prev').addEventListener('click', () => goToStep(3));
-  $('wizardStep4Next').addEventListener('click', async function() {
-    this.disabled = true;
+
+  async function executeStep5() {
+    const btn = $('wizardStep4Next');
+    btn.disabled = true;
 
     // Credit afschrijven bij laatste stap (niet bij stap 1)
     if (!isProef && activatiecode) {
-      this.textContent = 'Credit wordt afgeschreven...';
+      btn.textContent = 'Credit wordt afgeschreven...';
       try {
         const cRes = await fetch('/api/activate', {
           method: 'POST',
@@ -1722,16 +1789,16 @@
             noCreditsMsg.style.display = 'block';
             updateCreditBadge();
           }
-          this.disabled = false;
-          this.textContent = 'Rapport genereren →';
+          btn.disabled = false;
+          btn.textContent = 'Rapport genereren \u2192';
           return;
         }
         credits = cData.credits_over;
         localStorage.setItem('dossier_credits', credits);
         updateCreditBadge();
       } catch {
-        this.disabled = false;
-        this.textContent = 'Rapport genereren →';
+        btn.disabled = false;
+        btn.textContent = 'Rapport genereren \u2192';
         return;
       }
     }
@@ -1775,7 +1842,7 @@
       $('step5Loading').style.display = 'none';
 
       if (!res.ok) {
-        $('step5Content').innerHTML = `<div style="padding:16px; background:#fdf0ef; border:1px solid var(--red); border-radius:var(--radius); color:var(--red);">${escapeHtml(data.error || 'Analyse mislukt.')}</div>`;
+        stepError($('step5Content'), 'Analyse mislukt.');
         this.disabled = false;
         return;
       }
@@ -1795,9 +1862,27 @@
       laadHistorie();
     } catch (err) {
       $('step5Loading').style.display = 'none';
-      $('step5Content').innerHTML = `<div style="padding:16px; background:#fdf0ef; border:1px solid var(--red); border-radius:var(--radius); color:var(--red);">${escapeHtml(err.message)}</div>`;
+      stepError($('step5Content'), 'Rapport genereren mislukt.');
     }
-    this.disabled = false;
+    btn.disabled = false;
+  }
+
+  $('wizardStep4Next').addEventListener('click', function() {
+    // Bij credits: toon bevestiging. Bij proef: direct door.
+    if (!isProef && activatiecode && credits > 0) {
+      $('creditConfirmCount').textContent = credits - 1;
+      $('creditConfirm').classList.add('visible');
+    } else {
+      executeStep5();
+    }
+  });
+
+  $('creditConfirmOk').addEventListener('click', function() {
+    $('creditConfirm').classList.remove('visible');
+    executeStep5();
+  });
+  $('creditConfirmCancel').addEventListener('click', function() {
+    $('creditConfirm').classList.remove('visible');
   });
 
   function setStep(id, state) {
@@ -1903,6 +1988,12 @@
       });
       html += `</div>`;
     }
+
+    // Rapport acties
+    html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding:14px 18px; background:var(--cream); border:1px solid var(--border); border-radius:var(--radius); font-family:sans-serif;">`;
+    html += `<div style="font-size:13px; color:var(--text-light);">Screening voltooid voor <strong style="color:var(--navy);">${escapeHtml(data.naam)}</strong></div>`;
+    html += `<button onclick="resetScreening()" style="padding:8px 18px; background:var(--navy); color:#fff; border:none; border-radius:var(--radius); font-family:inherit; font-size:13px; cursor:pointer; font-weight:bold;">Nieuwe screening</button>`;
+    html += `</div>`;
 
     // Risk banner
     html += `<div class="risk-banner ${niveauClass}">`;
