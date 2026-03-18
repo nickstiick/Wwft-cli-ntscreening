@@ -2471,7 +2471,24 @@
 
       const { jsPDF } = window.jspdf;
       const pdf = new jsPDF('p', 'mm', 'a4');
-      buildNativePdf(pdf);
+
+      // Logo laden als dat is ingevuld
+      let logoImg = null;
+      const logoUrl = $('kantoorLogo')?.value?.trim();
+      if (logoUrl) {
+        try {
+          logoImg = await new Promise((resolve, reject) => {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => resolve(img);
+            img.onerror = () => resolve(null); // bij fout gewoon overslaan
+            img.src = logoUrl;
+            setTimeout(() => resolve(null), 5000); // timeout na 5s
+          });
+        } catch (e) { logoImg = null; }
+      }
+
+      buildNativePdf(pdf, logoImg);
 
       const naamClean = lastScreeningData.naam.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9\-]/g, '').toLowerCase();
       const datum = new Date().toISOString().slice(0, 10);
@@ -2497,7 +2514,7 @@
   }
 
   // ─── Native jsPDF rendering met klikbare links ──
-  function buildNativePdf(pdf) {
+  function buildNativePdf(pdf, logoImg) {
     const d = lastScreeningData;
     const a = d.analyse || {};
     const kleur = $('kantoorKleur')?.value || '#1a1a2e';
@@ -2625,6 +2642,18 @@
     }
 
     // ═══ HEADER ═══
+    if (logoImg) {
+      try {
+        const maxLogoH = 15; // mm
+        const maxLogoW = 50; // mm
+        const ratio = logoImg.naturalWidth / logoImg.naturalHeight;
+        let imgW = maxLogoH * ratio;
+        let imgH = maxLogoH;
+        if (imgW > maxLogoW) { imgW = maxLogoW; imgH = maxLogoW / ratio; }
+        pdf.addImage(logoImg, 'PNG', (pageW - imgW) / 2, y, imgW, imgH);
+        y += imgH + 3;
+      } catch (e) { /* logo overslaan bij fout */ }
+    }
     if (kantoor) {
       pdf.setFontSize(18);
       pdf.setFont('helvetica', 'bold');
