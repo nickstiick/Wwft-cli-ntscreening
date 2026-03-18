@@ -181,7 +181,8 @@
       border-color: var(--navy);
       box-shadow: 0 0 0 3px rgba(26,26,46,0.08);
     }
-    .form-group input.input-error {
+    .form-group input.input-error,
+    .form-group select.input-error {
       border-color: var(--red);
       box-shadow: 0 0 0 3px rgba(192,57,43,0.08);
     }
@@ -742,7 +743,7 @@
     /* ─── PRINT / DOWNLOAD ─────────────────── */
     @media print {
       nav, .activation-bar, .screen-form, .progress-panel,
-      .download-btn, .no-credits-msg, .submit-btn { display: none !important; }
+      .download-btn, .no-credits-msg, .submit-btn, .screen-intro, .wizard-bar { display: none !important; }
       .results-panel { display: block !important; }
       body { background: #fff; }
       .container { max-width: 100%; padding: 0; }
@@ -777,8 +778,14 @@
     Geen credits meer beschikbaar. <a href="/">Koop een nieuwe bundel</a> om door te gaan.
   </div>
 
+  <!-- Intro -->
+  <div class="screen-intro" id="screenIntro" style="background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:20px 24px; margin-bottom:20px; font-family:sans-serif; font-size:14px; color:var(--text); line-height:1.7;">
+    <strong style="color:var(--navy); font-size:15px;">Wwft-screening in 5 stappen</strong><br>
+    Vul de gegevens van uw cliënt in en wij doorzoeken automatisch het KvK Handelsregister, sanctielijsten (EU, OFAC, VN), PEP-databases, rechtspraak.nl en het open internet. U ontvangt een kant-en-klaar rapport met risicobeoordeling.
+  </div>
+
   <!-- Wizard Step Bar -->
-  <div class="wizard-bar" id="wizardBar" style="display:none;">
+  <div class="wizard-bar" id="wizardBar">
     <div class="wizard-step active" data-ws="1"><span class="step-num">1</span> Gegevens</div>
     <div class="wizard-step" data-ws="2"><span class="step-num">2</span> KvK</div>
     <div class="wizard-step" data-ws="3"><span class="step-num">3</span> Sancties</div>
@@ -789,6 +796,7 @@
   <!-- Screening form (Wizard Step 1) -->
   <div class="screen-form wizard-panel active" id="screenForm" data-wizard="1">
     <h2>Stap 1 — Cliëntgegevens</h2>
+    <p style="font-size:13px; color:var(--text-light); font-family:sans-serif; margin-bottom:16px; margin-top:-12px;">Vul minimaal de naam en het type relatie in. De rest is optioneel maar versterkt uw dossier.</p>
     <div class="form-grid">
       <div class="form-group full">
         <label for="naam">Volledige naam *</label>
@@ -817,7 +825,7 @@
       </div>
       <div class="form-group">
         <label for="aardDienst">Aard zakelijke relatie *</label>
-        <select id="aardDienst">
+        <select id="aardDienst" required>
           <option value="">— Selecteer —</option>
           <option value="Samenstellingsopdracht">Samenstellingsopdracht</option>
           <option value="Controle/audit">Controle/audit</option>
@@ -831,6 +839,7 @@
           <option value="Administratieve dienstverlening">Administratieve dienstverlening</option>
           <option value="Overig">Overig</option>
         </select>
+        <div class="field-error" id="aardDienstError">Selecteer de aard van de zakelijke relatie.</div>
       </div>
       <div class="form-group">
         <label>&nbsp;</label>
@@ -859,7 +868,7 @@
       <!-- Sectie-navigatie -->
       <div class="form-group full">
         <div class="section-nav" id="sectionNav">
-          <span class="section-nav-label">Aanvullende gegevens (klik om in te vullen)</span>
+          <span class="section-nav-label">Optioneel — versterkt uw dossier (klik om in te vullen)</span>
           <a href="#idToggle" data-nav-target="idToggle">Identificatie</a>
           <a href="#vertToggle" data-nav-target="vertToggle">Vertegenwoordiger</a>
           <a href="#uboToggle" data-nav-target="uboToggle" id="navUbo" style="display:none;">UBO-gegevens</a>
@@ -998,13 +1007,14 @@
 
     <div class="wizard-nav">
       <span></span>
-      <button class="btn-next" id="wizardStep1Next">Volgende stap &rarr;</button>
+      <button class="btn-next" id="wizardStep1Next">Start screening &rarr;</button>
     </div>
   </div>
 
   <!-- Wizard Step 2: KvK -->
   <div class="wizard-panel screen-form" id="wizardStep2" data-wizard="2">
     <h2>Stap 2 — KvK Handelsregister</h2>
+    <p style="font-size:13px; color:var(--text-light); font-family:sans-serif; margin-bottom:16px; margin-top:-12px;">We zoeken uw cliënt op in het Handelsregister van de Kamer van Koophandel.</p>
     <div id="step2Content">
       <div class="wizard-loading" id="step2Loading" style="display:none;">
         <div class="spinner"></div><br>KvK Handelsregister wordt doorzocht...
@@ -1023,6 +1033,7 @@
   <!-- Wizard Step 3: Sancties -->
   <div class="wizard-panel screen-form" id="wizardStep3" data-wizard="3">
     <h2>Stap 3 — Sanctielijsten &amp; PEP</h2>
+    <p style="font-size:13px; color:var(--text-light); font-family:sans-serif; margin-bottom:16px; margin-top:-12px;">We controleren uw cliënt tegen EU-, OFAC- en VN-sanctielijsten en PEP-databases. Niet-relevante treffers kunt u als false positive markeren.</p>
     <div id="step3Content">
       <div class="wizard-loading" id="step3Loading" style="display:none;">
         <div class="spinner"></div><br>Sanctielijsten worden gecontroleerd (EU, OFAC, VN)...
@@ -1038,6 +1049,7 @@
   <!-- Wizard Step 4: Google + Nieuws + Rechtspraak -->
   <div class="wizard-panel screen-form" id="wizardStep4" data-wizard="4">
     <h2>Stap 4 — Bronnenonderzoek</h2>
+    <p style="font-size:13px; color:var(--text-light); font-family:sans-serif; margin-bottom:16px; margin-top:-12px;">We doorzoeken het internet, nieuwsbronnen en rechtspraak.nl op relevante informatie over uw cliënt.</p>
     <div id="step4Content">
       <div class="wizard-loading" id="step4Loading" style="display:none;">
         <div class="spinner"></div><br>Internet, nieuws en rechtspraak worden doorzocht...
@@ -1053,6 +1065,7 @@
   <!-- Wizard Step 5: Analyse + Rapport -->
   <div class="wizard-panel screen-form" id="wizardStep5" data-wizard="5">
     <h2>Stap 5 — Analyse &amp; Rapport</h2>
+    <p style="font-size:13px; color:var(--text-light); font-family:sans-serif; margin-bottom:16px; margin-top:-12px;">Alle verzamelde gegevens worden geanalyseerd. U ontvangt een compleet rapport met risicobeoordeling.</p>
     <div id="step5Content">
       <div class="wizard-loading" id="step5Loading" style="display:none;">
         <div class="spinner"></div><br>AI-analyse wordt uitgevoerd en rapport wordt gegenereerd...
@@ -1320,14 +1333,16 @@
     queries: []
   };
 
-  // Show wizard bar on form interaction
-  function showWizardBar() { $('wizardBar').style.display = 'flex'; }
+  // Wizard bar is now always visible
 
-  // Clear validation on typing
+  // Clear validation on typing/change
   $('naam').addEventListener('input', function() {
     this.classList.remove('input-error');
     $('naamError').classList.remove('visible');
-    showWizardBar();
+  });
+  $('aardDienst').addEventListener('change', function() {
+    this.classList.remove('input-error');
+    $('aardDienstError').classList.remove('visible');
   });
 
   function goToStep(step) {
@@ -1340,6 +1355,14 @@
       if (sn < step) s.classList.add('done');
       if (sn === step) s.classList.add('active');
     });
+    // Hide intro and activation bar when past step 1 for cleaner view
+    if (step > 1) {
+      $('screenIntro').style.display = 'none';
+      activationBar.style.display = 'none';
+    } else {
+      $('screenIntro').style.display = 'block';
+      activationBar.style.display = 'block';
+    }
     // Show target panel
     const panel = document.querySelector(`[data-wizard="${step}"]`);
     if (panel) {
@@ -1383,13 +1406,29 @@
 
   // ── STEP 1 → 2: Validate form, deduct credit, go to KvK ──
   $('wizardStep1Next').addEventListener('click', async function() {
+    // Reset validation states
+    $('naam').classList.remove('input-error');
+    $('naamError').classList.remove('visible');
+    $('aardDienst').classList.remove('input-error');
+    $('aardDienstError').classList.remove('visible');
+
     const naam = $('naam').value.trim();
+    const aardDienst = $('aardDienst').value;
+    let hasError = false;
+
     if (!naam) {
       $('naam').classList.add('input-error');
       $('naamError').classList.add('visible');
-      $('naam').focus();
-      return;
+      if (!hasError) $('naam').focus();
+      hasError = true;
     }
+    if (!aardDienst) {
+      $('aardDienst').classList.add('input-error');
+      $('aardDienstError').classList.add('visible');
+      if (!hasError) $('aardDienst').focus();
+      hasError = true;
+    }
+    if (hasError) return;
 
     // Credit check
     isProef = false;
@@ -1401,7 +1440,6 @@
       isProef = true;
     }
 
-    showWizardBar();
     goToStep(2);
 
     // Auto-start KvK if applicable
@@ -1750,6 +1788,9 @@
 
       // Hide wizard step 5 panel and show full report
       document.querySelector('[data-wizard="5"]').classList.remove('active');
+      $('wizardBar').style.display = 'none';
+      $('screenIntro').style.display = 'none';
+      activationBar.style.display = 'none';
       renderResults(data);
       laadHistorie();
     } catch (err) {
@@ -2946,10 +2987,13 @@
     });
     $('wizardStep4Next').disabled = false;
 
-    // Hide results, show form
+    // Hide results, show form and restore UI elements
     resultsPanel.classList.remove('visible');
     resultsPanel.innerHTML = '';
     watermark.style.display = 'none';
+    $('wizardBar').style.display = 'flex';
+    $('screenIntro').style.display = 'block';
+    activationBar.style.display = 'block';
 
     // Scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
